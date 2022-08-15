@@ -99,9 +99,25 @@ class _OnBoardingState extends State<OnBoarding> {
               height: height * .1,
             ),
             CustomButton(
-                text: isLast ? 'GetStarted' : 'Next',
-                color: '#478AE5',
+                center: isLast
+                    ? const Text(
+                        'Get Started',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      )
+                    : const Text(
+                        'Next',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
                 height: height * .07,
+                color: '#0065FF',
                 onTap: () async {
                   if (isLast) {
                     CacheHelper.sharedPreferences

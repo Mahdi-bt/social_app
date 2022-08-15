@@ -52,7 +52,14 @@ class ForgetPasswordScreen extends StatelessWidget {
                 height: height * .03,
               ),
               CustomButton(
-                  text: 'Submit',
+                  center: const Text(
+                    'Submit',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
                   color: '#0065FF',
                   height: height * .06,
                   onTap: () {},

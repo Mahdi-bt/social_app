@@ -6,10 +6,10 @@ class CustomButton extends StatelessWidget {
   final double width;
   final VoidCallback onTap;
   final String color;
-  final String text;
+  final Widget center;
   const CustomButton(
       {Key? key,
-      required this.text,
+      required this.center,
       required this.color,
       required this.height,
       required this.onTap,
@@ -29,16 +29,7 @@ class CustomButton extends StatelessWidget {
             16,
           ),
         ),
-        child: Center(
-          child: Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
-          ),
-        ),
+        child: Center(child: center),
       ),
     );
   }

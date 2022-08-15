@@ -71,7 +71,14 @@ class LoginScreen extends StatelessWidget {
                   ),
                 ),
                 CustomButton(
-                    text: 'Login',
+                    center: const Text(
+                      'Login',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
                     color: '#0065FF',
                     height: height * .06,
                     onTap: () {},

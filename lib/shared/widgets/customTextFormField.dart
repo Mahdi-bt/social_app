@@ -6,6 +6,7 @@ class CustomTextFormField extends StatelessWidget {
   final String hintText;
   final TextEditingController myController;
   final IconData? suffixIcon;
+  final bool obsecureText;
   const CustomTextFormField({
     Key? key,
     required this.prefixIcon,
@@ -13,11 +14,13 @@ class CustomTextFormField extends StatelessWidget {
     required this.hintText,
     required this.labelText,
     required this.myController,
+    this.obsecureText = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      obscureText: obsecureText,
       cursorHeight: 20,
       autofocus: false,
       controller: myController,
