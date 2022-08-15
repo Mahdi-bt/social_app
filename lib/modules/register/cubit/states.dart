@@ -9,3 +9,5 @@ class RegisterSuccesStates extends RegisterStates {}
 class RegisterFailedStaes extends RegisterStates {}
 
 class RegisterChangeUserGender extends RegisterStates {}
+
+class RegisterChangePassVisibility extends RegisterStates {}

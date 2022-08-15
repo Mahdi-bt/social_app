@@ -29,6 +29,13 @@ class RegisterCubit extends Cubit<RegisterStates> {
     });
   }
 
+  bool passVisbility = true;
+
+  void changePasswordVisibility() {
+    passVisbility = !passVisbility;
+    emit(RegisterChangePassVisibility());
+  }
+
   userSaveData(
       {required String userName, required String email, required String uid}) {
     UserModel _user = UserModel(

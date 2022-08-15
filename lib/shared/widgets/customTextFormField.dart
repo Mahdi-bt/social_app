@@ -7,6 +7,8 @@ class CustomTextFormField extends StatelessWidget {
   final TextEditingController myController;
   final IconData? suffixIcon;
   final bool obsecureText;
+  final VoidCallback? suffixPressed;
+  final String? Function(String?)? validator;
   const CustomTextFormField({
     Key? key,
     required this.prefixIcon,
@@ -14,12 +16,15 @@ class CustomTextFormField extends StatelessWidget {
     required this.hintText,
     required this.labelText,
     required this.myController,
+    this.validator,
+    this.suffixPressed,
     this.obsecureText = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      validator: validator,
       obscureText: obsecureText,
       cursorHeight: 20,
       autofocus: false,
@@ -28,7 +33,10 @@ class CustomTextFormField extends StatelessWidget {
         labelText: labelText,
         hintText: hintText,
         prefixIcon: Icon(prefixIcon),
-        suffixIcon: Icon(suffixIcon),
+        suffixIcon: IconButton(
+          onPressed: suffixPressed,
+          icon: Icon(suffixIcon),
+        ),
         contentPadding:
             const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         border: OutlineInputBorder(

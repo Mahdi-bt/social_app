@@ -1,5 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:social_app/layout/cubit/cubit.dart';
+import 'package:social_app/layout/cubit/states.dart';
+import 'package:social_app/shared/components.dart';
+import 'package:social_app/shared/styles/styles.dart';
 import 'package:social_app/shared/widgets/buildPostitem.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -13,9 +18,9 @@ class SettingsScreen extends StatelessWidget {
         child: SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Padding(
-        padding: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          Container(
+          SizedBox(
             height: height * .34,
             child: Stack(
               children: [
@@ -84,19 +89,95 @@ class SettingsScreen extends StatelessWidget {
           SizedBox(
             height: height * .02,
           ),
-          ListView.separated(
-              padding: EdgeInsets.symmetric(horizontal: width * 0.01),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) =>
-                  buildPostItem(width: width, height: height),
-              separatorBuilder: (context, index) => SizedBox(
-                    height: height * 0.02,
-                  ),
-              itemCount: 3),
+          buildProfileItem(
+            height: height,
+            prefixIcon: Icons.edit,
+            suffixIcon: Icons.arrow_forward_ios_rounded,
+            text: 'Edit Profile Information',
+          ),
+          SizedBox(
+            height: height * .014,
+          ),
+          BlocConsumer<HomeCubit, HomeLayoutStates>(
+            builder: (context, state) {
+              var cubit = HomeCubit.get(context);
+              return buildProfileItem(
+                onTap: () {
+                  if (user != null) {
+                    cubit.logOutFromGoogle(context);
+                  } else {
+                    cubit.logOut(context);
+                  }
+                },
+                height: height,
+                prefixIcon: Icons.exit_to_app,
+                suffixIcon: Icons.arrow_forward_ios_rounded,
+                text: 'Exit From My Account ',
+              );
+            },
+            listener: (context, state) {},
+          ),
+          SizedBox(
+            height: height * .014,
+          ),
+          buildProfileItem(
+            height: height,
+            prefixIcon: Icons.post_add_rounded,
+            suffixIcon: Icons.arrow_forward_ios_rounded,
+            text: 'Show My Posts ',
+          ),
+          SizedBox(
+            height: height * .014,
+          ),
+          buildProfileItem(
+            height: height,
+            prefixIcon: Icons.security_rounded,
+            suffixIcon: Icons.arrow_forward_ios_rounded,
+            text: 'Update Security Info ',
+          ),
         ]),
       ),
     ));
+  }
+}
+
+class buildProfileItem extends StatelessWidget {
+  final VoidCallback? onTap;
+  final IconData prefixIcon;
+  final IconData suffixIcon;
+  final String text;
+  const buildProfileItem({
+    Key? key,
+    required this.height,
+    required this.prefixIcon,
+    required this.text,
+    required this.suffixIcon,
+    this.onTap,
+  }) : super(key: key);
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 10),
+        height: height * 0.06,
+        decoration: BoxDecoration(
+          color: HexColor('#EEE9E3'),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+          Icon(prefixIcon),
+          Text(
+            text,
+            style: Theme.of(context).textTheme.subtitle1,
+          ),
+          Icon(suffixIcon),
+        ]),
+      ),
+    );
   }
 }
 
