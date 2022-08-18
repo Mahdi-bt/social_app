@@ -130,18 +130,59 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         .add(postModel.toMap())
         .then((value) {
       deletePostImage();
+      getPosts();
       emit(HomeUploadPostSuccesStates());
     }).catchError((onError) {
       emit(HomeUploadPostFailedStates());
     });
   }
 
+  List<UserModel> users = [];
+  getUsers() async {
+    emit(HomeGetAllUsersLoadingState());
+    users = [];
+    FirebaseFirestore.instance.collection("users").get().then((value) {
+      for (var element in value.docs) {
+        var userModel = UserModel.fromJson(element.data());
+        if (userModel.uid != currentUser!.uid) {
+          users.add(userModel);
+        }
+      }
+      emit(HomeGetAllUsersSuccesState());
+    }).catchError((onError) {
+      emit(HomeGetAllUsersFailedState());
+    });
+  }
+
   List<PostModel> posts = [];
-  getPosts() {
+  List<int> postsLikes = [];
+  getPosts() async {
+    posts = [];
+    emit(HomeGetPostLoadingState());
     FirebaseFirestore.instance.collection("posts").get().then((value) {
       for (var element in value.docs) {
         posts.add(PostModel.fromJson(element.data()));
       }
+      FirebaseFirestore.instance.collection("posts").doc()
+      emit(HomeGetPostSuccesState());
+    }).then((value) {
+      emit(HomeGetPostFailedSate());
+    });
+  }
+
+  likePost({required String postId}) async {
+    emit(HomeLikePostLoadingState());
+    await FirebaseFirestore.instance
+        .collection("posts")
+        .doc(postId)
+        .collection("likes")
+        .add({
+      "uid": currentUser!.uid,
+      "name": currentUser!.userName,
+    }).then((value) {
+      emit(HomeLikePostSuccesState());
+    }).catchError((onError) {
+      emit(HomeGetAllUsersFailedState());
     });
   }
 }

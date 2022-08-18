@@ -1,5 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:social_app/layout/cubit/cubit.dart';
+import 'package:social_app/layout/cubit/states.dart';
+import 'package:social_app/modules/new_post/new_post_screen.dart';
 
 import '../../shared/widgets/buildPostitem.dart';
 
@@ -21,10 +24,12 @@ class FeedScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundImage: CachedNetworkImageProvider(
-                    'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
+                BlocBuilder<HomeCubit, HomeLayoutStates>(
+                  builder: (context, state) => CircleAvatar(
+                    radius: 20,
+                    backgroundImage: NetworkImage(
+                      HomeCubit.get(context).currentUser!.profilePic,
+                    ),
                   ),
                 ),
                 Text(
@@ -35,7 +40,17 @@ class FeedScreen extends StatelessWidget {
                       .copyWith(color: Colors.black),
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) {
+                        return BlocProvider.value(
+                          value: BlocProvider.of<HomeCubit>(context),
+                          child: NewPostScreen(),
+                        );
+                      },
+                    ),
+                  ),
                   icon: const Icon(
                     Icons.add_circle_rounded,
                     color: Colors.black45,
@@ -47,15 +62,20 @@ class FeedScreen extends StatelessWidget {
             SizedBox(
               height: height * .03,
             ),
-            ListView.separated(
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemBuilder: (context, index) =>
-                    buildPostItem(width: width, height: height),
-                separatorBuilder: (context, index) => SizedBox(
-                      height: height * .02,
-                    ),
-                itemCount: 5),
+            BlocBuilder<HomeCubit, HomeLayoutStates>(
+              builder: (context, state) {
+                var cubit = HomeCubit.get(context);
+                return ListView.separated(
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemBuilder: (context, index) => buildPostItem(
+                        width: width, height: height, post: cubit.posts[index]),
+                    separatorBuilder: (context, index) => SizedBox(
+                          height: height * .02,
+                        ),
+                    itemCount: cubit.posts.length);
+              },
+            )
           ]),
         ),
       ),
