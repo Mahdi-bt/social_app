@@ -1,15 +1,17 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:social_app/models/userModel.dart';
 
 import '../styles/styles.dart';
 
 class buildContactItem extends StatelessWidget {
-  const buildContactItem({
-    Key? key,
-    required this.width,
-    required this.height,
-  }) : super(key: key);
-
+  const buildContactItem(
+      {Key? key,
+      required this.width,
+      required this.height,
+      required this.userModel})
+      : super(key: key);
+  final UserModel userModel;
   final double width;
   final double height;
 
@@ -26,7 +28,7 @@ class buildContactItem extends StatelessWidget {
         vertical: height * .01,
       ),
       decoration: BoxDecoration(
-          color: HexColor('##F7F7F7'),
+          color: HexColor('#F7F7F7'),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -41,12 +43,12 @@ class buildContactItem extends StatelessWidget {
             backgroundColor: Colors.grey,
             child: Stack(
               children: [
-                const Align(
+                Align(
                   alignment: Alignment.center,
                   child: CircleAvatar(
                       backgroundColor: Colors.transparent,
                       backgroundImage: CachedNetworkImageProvider(
-                        'https://www.francetvinfo.fr/pictures/MkDDU1PHloj2qc8qm-tfN8Jj52g/752x423/2019/04/11/john_wick_2_a.jpg',
+                        userModel.profilePic,
                       ),
                       radius: 30),
                 ),
@@ -71,7 +73,7 @@ class buildContactItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Mahdi BT',
+                userModel.userName,
                 style: Theme.of(context).textTheme.headline6!.copyWith(
                       color: Colors.black,
                     ),

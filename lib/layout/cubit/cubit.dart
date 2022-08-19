@@ -155,17 +155,39 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
   }
 
   List<PostModel> posts = [];
-  List<int> postsLikes = [];
+  List<String> postsUid = [];
+  Map<String, List<String>> postsLikes = {};
+  List<String> userLikesUid = [];
   getPosts() async {
-    posts = [];
     emit(HomeGetPostLoadingState());
-    FirebaseFirestore.instance.collection("posts").get().then((value) {
+    emit(HomeGetPostLikeLoadingState());
+    posts = [];
+    postsUid = [];
+    postsLikes = {};
+
+    FirebaseFirestore.instance.collection("posts").get().then((value) async {
       for (var element in value.docs) {
+        if (element.data()['postLikes'] != 0) {
+          await element.reference.collection("likes").get().then((value) {
+            userLikesUid = [];
+            for (var likesElment in value.docs) {
+              userLikesUid.add(likesElment.id);
+            }
+            postsLikes[element.id] = userLikesUid;
+            // print(postsLikes[element.id]);
+          });
+        } else {
+          postsLikes[element.id] = [];
+        }
+        postsUid.add(element.id);
         posts.add(PostModel.fromJson(element.data()));
       }
-      FirebaseFirestore.instance.collection("posts").doc()
+      postsLikes.forEach((key, value) {
+        print("$key,$value");
+      });
+
       emit(HomeGetPostSuccesState());
-    }).then((value) {
+    }).catchError((onError) {
       emit(HomeGetPostFailedSate());
     });
   }
@@ -176,13 +198,41 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         .collection("posts")
         .doc(postId)
         .collection("likes")
-        .add({
-      "uid": currentUser!.uid,
-      "name": currentUser!.userName,
-    }).then((value) {
-      emit(HomeLikePostSuccesState());
+        .doc(currentUser!.uid)
+        .set({"like": true}).then((value) {
+      FirebaseFirestore.instance
+          .collection("posts")
+          .doc(postId)
+          .get()
+          .then((value) {
+        PostModel model = PostModel.fromJson(value.data()!);
+        model.postLikes++;
+        FirebaseFirestore.instance
+            .collection("posts")
+            .doc(postId)
+            .set(model.toMap());
+      }).then((value) {
+        postsLikes[postId]!.add(currentUser!.uid);
+        emit(HomeLikePostSuccesState());
+      });
     }).catchError((onError) {
       emit(HomeGetAllUsersFailedState());
+    });
+  }
+
+  removeLike({required String postUid}) {
+    emit(HomeDeleteLikePostLoadingState());
+    FirebaseFirestore.instance
+        .collection("posts")
+        .doc(postUid)
+        .collection("likes")
+        .doc(currentUser!.uid)
+        .delete()
+        .then((value) {
+      postsLikes[postUid]!.remove(currentUser!.uid);
+      emit(HomeDeleteLikePostSuccesState());
+    }).catchError((onError) {
+      emit(HomeDeleteLikePostFailedState());
     });
   }
 }

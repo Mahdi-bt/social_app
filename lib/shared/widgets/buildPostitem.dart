@@ -1,6 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:social_app/layout/cubit/cubit.dart';
+import 'package:social_app/layout/cubit/states.dart';
+import 'package:social_app/models/postModel.dart';
 import 'package:social_app/shared/styles/icon_broken.dart';
 
 import '../styles/styles.dart';
@@ -10,10 +14,15 @@ class buildPostItem extends StatelessWidget {
     Key? key,
     required this.width,
     required this.height,
+    required this.post,
+    required this.index,
+    required this.postUid,
   }) : super(key: key);
-
+  final PostModel post;
   final double width;
   final double height;
+  final String postUid;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +35,13 @@ class buildPostItem extends StatelessWidget {
       ),
       padding:
           EdgeInsets.symmetric(horizontal: width * .02, vertical: height * .02),
-      height: height * .65,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: CachedNetworkImage(
-                imageUrl:
-                    'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
+                imageUrl: post.posterPhotoUrl,
                 height: height * .06,
                 maxHeightDiskCache: 75,
                 key: UniqueKey(),
@@ -54,13 +61,13 @@ class buildPostItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Mahdi Ben Tamansourt',
+                  post.posterName,
                   style: Theme.of(context).textTheme.headline6!.copyWith(
                         color: Colors.black,
                       ),
                 ),
                 Text(
-                  'Software Enginner',
+                  post.postTime,
                   style: Theme.of(context).textTheme.bodyText1,
                 ),
               ],
@@ -75,39 +82,69 @@ class buildPostItem extends StatelessWidget {
         SizedBox(
           height: height * .02,
         ),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(
-            14,
-          ),
-          child: CachedNetworkImage(
-            imageUrl:
-                'https://cdn.pixabay.com/photo/2016/05/24/16/48/mountains-1412683__340.png',
-            height: height * .3,
-            maxHeightDiskCache: 75,
-            fit: BoxFit.cover,
-            key: UniqueKey(),
-            placeholder: (context, url) => Container(
-              color: Colors.black12,
-            ),
-            errorWidget: (context, url, error) => Container(
-              color: Colors.black12,
-              child: const Icon(Icons.report),
-            ),
-          ),
-        ),
+        post.mediaUrl != ""
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  14,
+                ),
+                child: CachedNetworkImage(
+                  imageUrl: post.mediaUrl,
+                  height: height * .3,
+                  maxHeightDiskCache: 200,
+                  fit: BoxFit.cover,
+                  key: UniqueKey(),
+                  placeholder: (context, url) => Container(
+                    color: Colors.black12,
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.black12,
+                    child: const Icon(Icons.report),
+                  ),
+                ),
+              )
+            : const SizedBox(),
         SizedBox(height: height * .005),
         Row(
           children: [
-            IconButton(
-              icon: const Icon(
-                IconBroken.Heart,
-                size: 28,
-              ),
-              onPressed: () {},
+            BlocBuilder<HomeCubit, HomeLayoutStates>(
+              builder: (context, state) {
+                var cubit = HomeCubit.get(context);
+                return IconButton(
+                  icon: Icon(
+                    IconBroken.Heart,
+                    size: 28,
+                    color: cubit.postsLikes[postUid]!
+                            .contains(cubit.currentUser!.uid)
+                        ? Colors.red
+                        : Colors.grey,
+                  ),
+                  onPressed: () {
+                    cubit.postsLikes[postUid]!.contains(cubit.currentUser!.uid)
+                        ? cubit.removeLike(postUid: postUid)
+                        : HomeCubit.get(context).likePost(postId: postUid);
+                  },
+                );
+              },
             ),
-            Text(
-              '12K',
-              style: Theme.of(context).textTheme.subtitle1,
+            BlocBuilder<HomeCubit, HomeLayoutStates>(
+              builder: (context, state) {
+                var cubit = HomeCubit.get(context);
+                return Text(
+                  HomeCubit.get(context).postsLikes[postUid]!.isEmpty
+                      ? "0"
+                      : HomeCubit.get(context)
+                          .postsLikes[postUid]!
+                          .length
+                          .toString(),
+                  style: cubit.postsLikes[postUid]!
+                          .contains(cubit.currentUser!.uid)
+                      ? Theme.of(context)
+                          .textTheme
+                          .subtitle1!
+                          .copyWith(color: Colors.blueAccent)
+                      : Theme.of(context).textTheme.subtitle1,
+                );
+              },
             ),
             IconButton(
               padding: const EdgeInsets.all(0),
@@ -136,11 +173,7 @@ class buildPostItem extends StatelessWidget {
           ],
         ),
         Text(
-          "Tanjiro",
-          style: Theme.of(context).textTheme.headline6,
-        ),
-        Text(
-          'is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s',
+          post.postTitle,
           style: Theme.of(context).textTheme.caption!.copyWith(
                 overflow: TextOverflow.ellipsis,
                 fontSize: 16,
@@ -167,7 +200,7 @@ class buildPostItem extends StatelessWidget {
                 width: width * .01,
               ),
               Text(
-                '192',
+                post.postComment.toString(),
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge!

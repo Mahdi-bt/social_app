@@ -14,7 +14,12 @@ void main() async {
   String widgetToStart;
   if (CacheHelper.sharedPreferences.getBool('onBoard') != null &&
       CacheHelper.sharedPreferences.getBool('onBoard') == false) {
-    widgetToStart = '/login';
+    if (CacheHelper.sharedPreferences.getString('uid') != null) {
+      widgetToStart = '/home';
+      print(CacheHelper.sharedPreferences.getString('uid'));
+    } else {
+      widgetToStart = '/login';
+    }
   } else {
     widgetToStart = '/onBoarding';
   }

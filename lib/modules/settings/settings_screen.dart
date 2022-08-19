@@ -5,7 +5,6 @@ import 'package:social_app/layout/cubit/cubit.dart';
 import 'package:social_app/layout/cubit/states.dart';
 import 'package:social_app/shared/components.dart';
 import 'package:social_app/shared/styles/styles.dart';
-import 'package:social_app/shared/widgets/buildPostitem.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -27,8 +26,7 @@ class SettingsScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: CachedNetworkImage(
-                    imageUrl:
-                        'https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Zed_10.jpg',
+                    imageUrl: context.read<HomeCubit>().currentUser!.coverPic,
                     height: height * .3,
                     maxHeightDiskCache: 150,
                     fit: BoxFit.cover,
@@ -45,13 +43,13 @@ class SettingsScreen extends StatelessWidget {
                 Positioned(
                   bottom: 0,
                   left: width * .5 - 53,
-                  child: const CircleAvatar(
+                  child: CircleAvatar(
                     radius: 48,
                     backgroundColor: Colors.grey,
                     child: CircleAvatar(
                         backgroundColor: Colors.transparent,
                         backgroundImage: CachedNetworkImageProvider(
-                          'https://www.francetvinfo.fr/pictures/MkDDU1PHloj2qc8qm-tfN8Jj52g/752x423/2019/04/11/john_wick_2_a.jpg',
+                          context.read<HomeCubit>().currentUser!.profilePic,
                         ),
                         radius: 45),
                   ),
@@ -63,7 +61,7 @@ class SettingsScreen extends StatelessWidget {
             height: height * .01,
           ),
           Text(
-            "Mahdi Ben Tamansourt",
+            context.read<HomeCubit>().currentUser!.userName,
             style: Theme.of(context).textTheme.headline5,
           ),
           SizedBox(
@@ -102,11 +100,11 @@ class SettingsScreen extends StatelessWidget {
             builder: (context, state) {
               var cubit = HomeCubit.get(context);
               return buildProfileItem(
-                onTap: () {
+                onTap: () async {
                   if (user != null) {
-                    cubit.logOutFromGoogle(context);
+                    await cubit.logOutFromGoogle(context);
                   } else {
-                    cubit.logOut(context);
+                    await cubit.logOut(context);
                   }
                 },
                 height: height,

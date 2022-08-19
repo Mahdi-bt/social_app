@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:social_app/layout/cubit/cubit.dart';
 import 'package:social_app/layout/cubit/states.dart';
+import 'package:social_app/shared/components.dart';
+import 'package:social_app/shared/local/CacheHelper.dart';
 
 class HomeLayout extends StatefulWidget {
   const HomeLayout({Key? key}) : super(key: key);
@@ -23,14 +25,25 @@ class _HomeLayoutState extends State<HomeLayout> {
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     return BlocProvider(
-        create: (context) => HomeCubit(),
+        lazy: true,
+        create: (context) => HomeCubit()
+          ..getCurrentUser(uid: CacheHelper.sharedPreferences.getString('uid')!)
+          ..getUsers()
+          ..getPosts(),
         child: BlocConsumer<HomeCubit, HomeLayoutStates>(
           listener: (context, state) {},
           builder: (context, state) {
             var cubit = HomeCubit.get(context);
             var currentIndex = cubit.currentIndex;
             return Scaffold(
-              body: cubit.screens[cubit.currentIndex],
+              body: state is HomeGetPostLoadingState ||
+                      state is HomeGetAllUsersLoadingState ||
+                      state is HomeGetUserDataLoadingState ||
+                      cubit.currentUser == null
+                  ? const Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  : cubit.screens[cubit.currentIndex],
               bottomNavigationBar: Container(
                 margin: const EdgeInsets.all(20),
                 height: screenWidth * .155,

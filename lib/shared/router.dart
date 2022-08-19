@@ -3,6 +3,7 @@ import 'package:social_app/layout/home_layout.dart';
 import 'package:social_app/modules/feed/feed_screen.dart';
 import 'package:social_app/modules/login/forget_password.dart';
 import 'package:social_app/modules/login/login_screen.dart';
+import 'package:social_app/modules/new_post/new_post_screen.dart';
 import 'package:social_app/modules/onBoarding/onBoarding_screen.dart';
 import 'package:social_app/modules/register/register_screen.dart';
 import 'package:social_app/shared/animation/sizeAnimation.dart';
@@ -11,7 +12,7 @@ class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
     final args = routeSettings.arguments;
     switch (routeSettings.name) {
-      case '/':
+      case '/home':
         return SizeAnimationToLeft(
           page: HomeLayout(),
         );
@@ -21,7 +22,7 @@ class RouteGenerator {
         );
       case '/onBoarding':
         return MaterialPageRoute(
-          builder: (_) => OnBoarding(),
+          builder: (_) => const OnBoarding(),
         );
 
       case '/feed':
@@ -31,6 +32,10 @@ class RouteGenerator {
       case '/register':
         return SizeAnimationToLeft(
           page: RegisterScreen(),
+        );
+      case '/newpost':
+        return SizeAnimationToLeft(
+          page: NewPostScreen(),
         );
       case '/forgetPassword':
         return SizeAnimationToRight(page: ForgetPasswordScreen());

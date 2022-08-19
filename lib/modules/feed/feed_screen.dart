@@ -69,7 +69,12 @@ class FeedScreen extends StatelessWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     itemBuilder: (context, index) => buildPostItem(
-                        width: width, height: height, post: cubit.posts[index]),
+                          width: width,
+                          height: height,
+                          post: cubit.posts[index],
+                          postUid: cubit.postsUid[index],
+                          index: index,
+                        ),
                     separatorBuilder: (context, index) => SizedBox(
                           height: height * .02,
                         ),

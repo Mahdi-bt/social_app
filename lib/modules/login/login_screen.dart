@@ -148,7 +148,7 @@ class LoginScreen extends StatelessWidget {
                           showToast(
                               text: 'Login Succefuly',
                               state: ToastStates.SUCCESS);
-                          Navigator.of(context).pushReplacementNamed('/');
+                          Navigator.of(context).pushReplacementNamed('/home');
                         }
                       },
                     ),
@@ -189,7 +189,7 @@ class LoginScreen extends StatelessWidget {
                           showToast(
                               text: 'Login Succefuly',
                               state: ToastStates.SUCCESS);
-                          Navigator.of(context).pushReplacementNamed('/');
+                          Navigator.of(context).pushReplacementNamed('/home');
                         }
                       },
                       builder: (context, state) {
