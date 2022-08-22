@@ -5,10 +5,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:social_app/layout/cubit/states.dart';
+import 'package:social_app/models/commentModel.dart';
 import 'package:social_app/models/postModel.dart';
 import 'package:social_app/models/userModel.dart';
 import 'package:social_app/modules/chat/contact_screen.dart';
@@ -157,14 +157,16 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
   List<PostModel> posts = [];
   List<String> postsUid = [];
   Map<String, List<String>> postsLikes = {};
+  Map<String, List<CommentModel>> postsComment = {};
   List<String> userLikesUid = [];
+  List<CommentModel> usersComment = [];
   getPosts() async {
     emit(HomeGetPostLoadingState());
-    emit(HomeGetPostLikeLoadingState());
+
     posts = [];
     postsUid = [];
     postsLikes = {};
-
+    postsComment = {};
     FirebaseFirestore.instance.collection("posts").get().then((value) async {
       for (var element in value.docs) {
         if (element.data()['postLikes'] != 0) {
@@ -179,12 +181,26 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         } else {
           postsLikes[element.id] = [];
         }
+
+        if (element.data()['postComment'] != 0) {
+          await element.reference.collection("comment").get().then((value) {
+            usersComment = [];
+            for (var commentElment in value.docs) {
+              usersComment.add(CommentModel.formJson(commentElment.data()));
+            }
+            postsComment[element.id] = usersComment;
+            // print(postsLikes[element.id]);
+          });
+        } else {
+          postsComment[element.id] = [];
+        }
+
         postsUid.add(element.id);
         posts.add(PostModel.fromJson(element.data()));
       }
-      postsLikes.forEach((key, value) {
-        print("$key,$value");
-      });
+      // postsLikes.forEach((key, value) {
+      //   print("$key,$value");
+      // });
 
       emit(HomeGetPostSuccesState());
     }).catchError((onError) {
@@ -229,10 +245,76 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         .doc(currentUser!.uid)
         .delete()
         .then((value) {
-      postsLikes[postUid]!.remove(currentUser!.uid);
-      emit(HomeDeleteLikePostSuccesState());
+      FirebaseFirestore.instance
+          .collection("posts")
+          .doc(postUid)
+          .get()
+          .then((value) {
+        PostModel model = PostModel.fromJson(value.data()!);
+        model.postLikes--;
+        FirebaseFirestore.instance
+            .collection("posts")
+            .doc(postUid)
+            .set(model.toMap());
+      }).then((value) {
+        postsLikes[postUid]!.remove(currentUser!.uid);
+
+        emit(HomeDeleteLikePostSuccesState());
+      });
     }).catchError((onError) {
       emit(HomeDeleteLikePostFailedState());
+    });
+  }
+
+  List<UserModel> commentUsers = [];
+  Future<void> getUsersCommentList({required String Uid}) async {
+    emit(HomeGetPostCommentLoadingState());
+
+    for (var element in postsComment[Uid]!) {
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(element.commentUserUid)
+          .get()
+          .then((value) {
+        commentUsers.add(UserModel.fromJson(value.data()!));
+      });
+    }
+    emit(HomeGetPostCommentSuccesState());
+  }
+
+  commentPost({required String postUid, required String commentText}) async {
+    emit(HomeCommentPostLoadingState());
+    CommentModel _comment = CommentModel(
+        commentText: commentText,
+        commentUserPic: currentUser!.profilePic,
+        commentUserUid: currentUser!.uid,
+        date: DateFormat('kk:mm EEE d MMM').format(DateTime.now()));
+    await FirebaseFirestore.instance
+        .collection("posts")
+        .doc(postUid)
+        .collection("comment")
+        .doc(currentUser!.uid)
+        .set(_comment.toMap())
+        .then((value) {
+      FirebaseFirestore.instance
+          .collection("posts")
+          .doc(postUid)
+          .get()
+          .then((value) {
+        PostModel model = PostModel.fromJson(value.data()!);
+        model.postComment++;
+        FirebaseFirestore.instance
+            .collection("posts")
+            .doc(postUid)
+            .set(model.toMap());
+      }).then((value) {
+        postsComment[postUid]!.add(_comment);
+        emit(HomeCommentPostSuccesState());
+      }).catchError((onError) {
+        emit(HomeCommentPostFailedState());
+      });
+    }).catchError((onError) {
+      emit(HomeCommentPostFailedState());
     });
   }
 }
