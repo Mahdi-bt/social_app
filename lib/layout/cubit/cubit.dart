@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:social_app/layout/cubit/states.dart';
+import 'package:social_app/models/chatModel.dart';
 import 'package:social_app/models/commentModel.dart';
 import 'package:social_app/models/postModel.dart';
 import 'package:social_app/models/userModel.dart';
@@ -316,5 +317,133 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     }).catchError((onError) {
       emit(HomeCommentPostFailedState());
     });
+  }
+
+  void sendMessage({
+    required String reciverId,
+    required String messageText,
+  }) {
+    emit(HomeSendMessageLoadingState());
+
+    if (messageImage != null) {
+      FirebaseStorage.instance
+          .ref("message_images/${messageImage!.path.split('/').last}")
+          .putFile(messageImage!)
+          .then((p0) {
+        p0.ref.getDownloadURL().then((value) {
+          ChatModel chat = ChatModel(
+            messageText: messageText,
+            imageUrl: value,
+            reciverId: reciverId,
+            senderId: currentUser!.uid,
+            dateTime: DateFormat('kk:mm EEE ').format(
+              DateTime.now(),
+            ),
+          );
+          FirebaseFirestore.instance
+              .collection("users")
+              .doc(currentUser!.uid)
+              .collection("chats")
+              .doc(reciverId)
+              .collection("messages")
+              .add(chat.toMap())
+              .then((value) {
+            FirebaseFirestore.instance
+                .collection("users")
+                .doc(reciverId)
+                .collection("chats")
+                .doc(currentUser!.uid)
+                .collection("messages")
+                .add(chat.toMap())
+                .then((value) {
+                  deleteMessageImage();
+                  emit(HomeSendMessageSuccesState());
+                })
+                .catchError((onError) {})
+                .catchError((onError) {
+                  emit(HomeSendMessageFailedState());
+                });
+          }).catchError((onError) {
+            emit(HomeSendMessageFailedState());
+          });
+        });
+      }).catchError((onError) {});
+    } else {
+      ChatModel chat = ChatModel(
+        messageText: messageText,
+        reciverId: reciverId,
+        senderId: currentUser!.uid,
+        dateTime: DateFormat('kk:mm EEE ').format(
+          DateTime.now(),
+        ),
+        imageUrl: '',
+      );
+      FirebaseFirestore.instance
+          .collection("users")
+          .doc(currentUser!.uid)
+          .collection("chats")
+          .doc(reciverId)
+          .collection("messages")
+          .add(chat.toMap())
+          .then((value) {
+        FirebaseFirestore.instance
+            .collection("users")
+            .doc(reciverId)
+            .collection("chats")
+            .doc(currentUser!.uid)
+            .collection("messages")
+            .add(chat.toMap())
+            .then((value) {
+              emit(HomeSendMessageSuccesState());
+            })
+            .catchError((onError) {})
+            .catchError((onError) {
+              emit(HomeSendMessageFailedState());
+            });
+      }).catchError((onError) {
+        emit(HomeSendMessageFailedState());
+      });
+    }
+  }
+
+  List<ChatModel> chats = [];
+  void getMessages({required String reciverId}) {
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .collection("chats")
+        .doc(reciverId)
+        .collection("messages")
+        .orderBy('dateTime')
+        .snapshots()
+        .listen((event) {
+      chats = [];
+      for (var element in event.docs) {
+        chats.add(ChatModel.fromJson(element.data()));
+      }
+      emit(HomeGetMessageSuccesState());
+    });
+  }
+
+  File? messageImage;
+
+  pickMessageImage() async {
+    var pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedFile != null) {
+      messageImage = File(pickedFile.path);
+      debugPrint(pickedFile.path);
+      emit(HomePickMessageImageSuccesState());
+    } else {
+      debugPrint('No image selected.');
+      emit(HomePickMessageImageFailedState());
+    }
+  }
+
+  deleteMessageImage() async {
+    messageImage = null;
+    emit(HomePickMessageImageDeleteState());
   }
 }

@@ -4,26 +4,31 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:social_app/layout/cubit/cubit.dart';
 import 'package:social_app/layout/cubit/states.dart';
+import 'package:social_app/models/commentModel.dart';
 import 'package:social_app/models/postModel.dart';
+import 'package:social_app/models/userModel.dart';
 import 'package:social_app/shared/styles/icon_broken.dart';
+import 'package:social_app/shared/widgets/widgets.dart';
 
 import '../styles/styles.dart';
 
 class buildPostItem extends StatelessWidget {
-  const buildPostItem({
+  buildPostItem({
     Key? key,
     required this.width,
     required this.height,
     required this.post,
     required this.index,
     required this.postUid,
+    required this.newContext,
   }) : super(key: key);
   final PostModel post;
   final double width;
   final double height;
   final String postUid;
   final int index;
-
+  final BuildContext newContext;
+  TextEditingController myController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -146,13 +151,173 @@ class buildPostItem extends StatelessWidget {
                 );
               },
             ),
-            IconButton(
-              padding: const EdgeInsets.all(0),
-              icon: const Icon(
-                IconBroken.Message,
-                size: 28,
-              ),
-              onPressed: () {},
+            BlocBuilder<HomeCubit, HomeLayoutStates>(
+              builder: (context, state) {
+                return IconButton(
+                  padding: const EdgeInsets.all(0),
+                  icon: const Icon(
+                    IconBroken.Message,
+                    size: 28,
+                  ),
+                  onPressed: () async {
+                    await HomeCubit.get(context)
+                        .getUsersCommentList(Uid: postUid)
+                        .then((value) {});
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      useRootNavigator: true,
+                      builder: (context) {
+                        return BlocProvider.value(
+                          value: BlocProvider.of<HomeCubit>(newContext),
+                          child: BlocBuilder<HomeCubit, HomeLayoutStates>(
+                            builder: (context, state) {
+                              var cubit = HomeCubit.get(context);
+                              List<CommentModel>? comment =
+                                  cubit.postsComment[postUid];
+
+                              return Container(
+                                height: height * .9,
+                                width: width,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: width * .01,
+                                    vertical: height * .03),
+                                child: Column(
+                                  children: [
+                                    Expanded(
+                                      child: ListView.separated(
+                                        itemBuilder: (context, index) {
+                                          return Row(
+                                            children: [
+                                              ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: CachedNetworkImage(
+                                                  imageUrl: comment![index]
+                                                      .commentUserPic,
+                                                  height: height * .06,
+                                                  maxHeightDiskCache: 75,
+                                                  key: UniqueKey(),
+                                                  placeholder: (context, url) =>
+                                                      Container(
+                                                    color: Colors.black12,
+                                                  ),
+                                                  errorWidget:
+                                                      (context, url, error) =>
+                                                          Container(
+                                                    color: Colors.black12,
+                                                    child: const Icon(
+                                                        Icons.report),
+                                                  ),
+                                                ),
+                                              ),
+                                              SizedBox(
+                                                width: width * .02,
+                                              ),
+                                              Expanded(
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(10),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            20),
+                                                    color: HexColor('#EFEFEF'),
+                                                  ),
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        cubit
+                                                            .commentUsers[index]
+                                                            .userName,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .headline6!
+                                                            .copyWith(
+                                                              color:
+                                                                  Colors.black,
+                                                            ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                      Text(
+                                                        comment[index]
+                                                            .commentText,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .bodyText1,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              IconButton(
+                                                onPressed: () {},
+                                                icon: const Icon(
+                                                    Icons.more_vert_rounded),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                        separatorBuilder: (context, index) =>
+                                            SizedBox(height: height * .03),
+                                        itemCount:
+                                            cubit.postsComment[postUid]!.length,
+                                        shrinkWrap: true,
+                                        physics: const BouncingScrollPhysics(),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: height * .01,
+                                    ),
+                                    Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: MediaQuery.of(context)
+                                            .viewInsets
+                                            .bottom,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: CustomTextFormField(
+                                              prefixIcon: null,
+                                              suffixIcon:
+                                                  Icons.emoji_emotions_rounded,
+                                              hintText:
+                                                  'Enter your comment here',
+                                              labelText: null,
+                                              myController: myController,
+                                            ),
+                                          ),
+                                          IconButton(
+                                              onPressed: () async {
+                                                await cubit.commentPost(
+                                                    postUid: postUid,
+                                                    commentText:
+                                                        myController.text);
+                                                myController.clear();
+                                              },
+                                              icon: const Icon(
+                                                  Icons.send_rounded))
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
             ),
             IconButton(
               icon: const Icon(

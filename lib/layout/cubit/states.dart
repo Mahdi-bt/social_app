@@ -66,3 +66,35 @@ class HomeDeleteLikePostLoadingState extends HomeLayoutStates {}
 class HomeDeleteLikePostSuccesState extends HomeLayoutStates {}
 
 class HomeDeleteLikePostFailedState extends HomeLayoutStates {}
+
+// states to Comment post
+class HomeCommentPostSuccesState extends HomeLayoutStates {}
+
+class HomeCommentPostFailedState extends HomeLayoutStates {}
+
+class HomeCommentPostLoadingState extends HomeLayoutStates {}
+
+//states to get Comment
+class HomeGetPostCommentLoadingState extends HomeLayoutStates {}
+
+class HomeGetPostCommentSuccesState extends HomeLayoutStates {}
+
+class HomeGetPostCommentFailedState extends HomeLayoutStates {}
+
+//states to send message
+
+class HomeSendMessageLoadingState extends HomeLayoutStates {}
+
+class HomeSendMessageFailedState extends HomeLayoutStates {}
+
+class HomeSendMessageSuccesState extends HomeLayoutStates {}
+
+//state to get messages
+class HomeGetMessageSuccesState extends HomeLayoutStates {}
+
+// states to pick messageImage
+class HomePickMessageImageSuccesState extends HomeLayoutStates {}
+
+class HomePickMessageImageFailedState extends HomeLayoutStates {}
+
+class HomePickMessageImageDeleteState extends HomeLayoutStates {}

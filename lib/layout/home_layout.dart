@@ -36,6 +36,7 @@ class _HomeLayoutState extends State<HomeLayout> {
             var cubit = HomeCubit.get(context);
             var currentIndex = cubit.currentIndex;
             return Scaffold(
+              resizeToAvoidBottomInset: true,
               body: state is HomeGetPostLoadingState ||
                       state is HomeGetAllUsersLoadingState ||
                       state is HomeGetUserDataLoadingState ||
