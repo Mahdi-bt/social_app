@@ -98,3 +98,25 @@ class HomePickMessageImageSuccesState extends HomeLayoutStates {}
 class HomePickMessageImageFailedState extends HomeLayoutStates {}
 
 class HomePickMessageImageDeleteState extends HomeLayoutStates {}
+
+//states to get current user posts
+
+class HomeGetMyPostSuccesState extends HomeLayoutStates {}
+
+class HomeGetMyPostFailedState extends HomeLayoutStates {}
+
+class HomeGetMyPostLoadingState extends HomeLayoutStates {}
+
+//states to delete posts
+class HomeDeletePostLoadingState extends HomeLayoutStates {}
+
+class HomeDeletePostFailedState extends HomeLayoutStates {}
+
+class HomeDeletePostSuccesState extends HomeLayoutStates {}
+
+//states to update Post
+class HomeUpdatePostSuccesState extends HomeLayoutStates {}
+
+class HomeUpdatePostFailedState extends HomeLayoutStates {}
+
+class HomeUpdatePostLoadingState extends HomeLayoutStates {}

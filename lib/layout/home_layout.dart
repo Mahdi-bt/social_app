@@ -28,7 +28,6 @@ class _HomeLayoutState extends State<HomeLayout> {
         lazy: true,
         create: (context) => HomeCubit()
           ..getCurrentUser(uid: CacheHelper.sharedPreferences.getString('uid')!)
-          ..getUsers()
           ..getPosts(),
         child: BlocConsumer<HomeCubit, HomeLayoutStates>(
           listener: (context, state) {},

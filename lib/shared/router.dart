@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:social_app/layout/home_layout.dart';
+import 'package:social_app/models/postModel.dart';
 import 'package:social_app/modules/feed/feed_screen.dart';
 import 'package:social_app/modules/login/forget_password.dart';
 import 'package:social_app/modules/login/login_screen.dart';
@@ -8,13 +9,15 @@ import 'package:social_app/modules/onBoarding/onBoarding_screen.dart';
 import 'package:social_app/modules/register/register_screen.dart';
 import 'package:social_app/shared/animation/sizeAnimation.dart';
 
+import '../modules/settings/update_posts.dart';
+
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
     final args = routeSettings.arguments;
     switch (routeSettings.name) {
       case '/home':
         return SizeAnimationToLeft(
-          page: HomeLayout(),
+          page: const HomeLayout(),
         );
       case '/login':
         return MaterialPageRoute(
@@ -33,6 +36,10 @@ class RouteGenerator {
         return SizeAnimationToLeft(
           page: RegisterScreen(),
         );
+      // case '/updatePost':
+      //   return SizeAnimationToLeft(
+      //     page: UpdatePostScreen(post: args as PostModel),
+      //   );
       case '/newpost':
         return SizeAnimationToLeft(
           page: NewPostScreen(),

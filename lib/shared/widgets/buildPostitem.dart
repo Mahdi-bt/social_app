@@ -7,6 +7,7 @@ import 'package:social_app/layout/cubit/states.dart';
 import 'package:social_app/models/commentModel.dart';
 import 'package:social_app/models/postModel.dart';
 import 'package:social_app/models/userModel.dart';
+import 'package:social_app/modules/settings/update_posts.dart';
 import 'package:social_app/shared/styles/icon_broken.dart';
 import 'package:social_app/shared/widgets/widgets.dart';
 
@@ -79,7 +80,88 @@ class buildPostItem extends StatelessWidget {
             ),
             const Spacer(),
             IconButton(
-              onPressed: () {},
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  builder: (context) {
+                    return BlocProvider.value(
+                      value: BlocProvider.of<HomeCubit>(newContext),
+                      child: BlocBuilder<HomeCubit, HomeLayoutStates>(
+                        builder: (context, state) {
+                          return SizedBox(
+                            height: post.posterUid ==
+                                    HomeCubit.get(newContext).currentUser!.uid
+                                ? height * .18
+                                : height * .1,
+                            child: Column(children: [
+                              post.posterUid ==
+                                      HomeCubit.get(newContext).currentUser!.uid
+                                  ? buildEditPostItem(
+                                      width: width,
+                                      context: context,
+                                      function: () async {
+                                        await HomeCubit.get(context)
+                                            .deletePost(
+                                                postUid: postUid, index: index)
+                                            .then((value) {
+                                          Navigator.pop(context);
+                                        });
+                                      },
+                                      height: height,
+                                      icon: Icons.delete_forever_rounded,
+                                      text: 'Delete This Post',
+                                      color: Colors.red)
+                                  : const SizedBox(),
+                              post.posterUid ==
+                                      HomeCubit.get(newContext).currentUser!.uid
+                                  ? buildEditPostItem(
+                                      function: () {
+                                        Navigator.pop(context);
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) {
+                                              return BlocProvider.value(
+                                                value:
+                                                    BlocProvider.of<HomeCubit>(
+                                                        context),
+                                                child: UpdatePostScreen(
+                                                  post: post,
+                                                  postId: postUid,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                      context: context,
+                                      width: width,
+                                      height: height,
+                                      icon: Icons.edit,
+                                      text: 'Update This Post',
+                                      color: Colors.blue,
+                                    )
+                                  : const SizedBox(),
+                              post.posterUid !=
+                                      HomeCubit.get(newContext).currentUser!.uid
+                                  ? buildEditPostItem(
+                                      function: () {},
+                                      context: context,
+                                      width: width,
+                                      height: height,
+                                      icon: Icons.report,
+                                      text: 'Report This Post',
+                                      color: Colors.grey,
+                                    )
+                                  : const SizedBox(),
+                            ]),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
               icon: const Icon(Icons.more_vert_rounded),
             ),
           ],
@@ -378,4 +460,42 @@ class buildPostItem extends StatelessWidget {
       ]),
     );
   }
+
+  Widget buildEditPostItem(
+          {required width,
+          required height,
+          required icon,
+          required text,
+          required function,
+          required color,
+          required BuildContext context}) =>
+      InkWell(
+        onTap: function,
+        child: Container(
+          margin: EdgeInsets.symmetric(
+              horizontal: width * .07, vertical: height * .01),
+          height: height * .065,
+          decoration: BoxDecoration(
+            color: HexColor('#E1E1E1'),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child:
+              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+            Icon(
+              icon,
+              color: color,
+              size: 26,
+            ),
+            Text(text,
+                style: Theme.of(context)
+                    .textTheme
+                    .headline6!
+                    .copyWith(color: Colors.black)),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 26,
+            ),
+          ]),
+        ),
+      );
 }

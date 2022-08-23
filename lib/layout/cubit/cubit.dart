@@ -37,6 +37,9 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     const SettingsScreen()
   ];
   void changeBottomNavState(int index) {
+    if (index == 1) {
+      getUsers();
+    }
     currentIndex = index;
     emit(HomeChangeBottomNavState());
   }
@@ -161,7 +164,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
   Map<String, List<CommentModel>> postsComment = {};
   List<String> userLikesUid = [];
   List<CommentModel> usersComment = [];
-  getPosts() async {
+  Future<void> getPosts() async {
     emit(HomeGetPostLoadingState());
 
     posts = [];
@@ -445,5 +448,79 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
   deleteMessageImage() async {
     messageImage = null;
     emit(HomePickMessageImageDeleteState());
+  }
+
+  List<PostModel> myPosts = [];
+  List<String> myPostUid = [];
+  Future<void> getMyPosts() async {
+    emit(HomeGetMyPostLoadingState());
+    myPosts = [];
+    myPostUid = [];
+    await FirebaseFirestore.instance
+        .collection("posts")
+        .where("posterUid", isEqualTo: currentUser!.uid)
+        .get()
+        .then((value) {
+      for (var elment in value.docs) {
+        myPosts.add(PostModel.fromJson(elment.data()));
+        myPostUid.add(elment.id);
+      }
+    }).then((value) {
+      emit(HomeGetMyPostSuccesState());
+    }).catchError((onError) {
+      emit(HomeGetMyPostFailedState());
+    });
+  }
+
+  Future<void> deletePost({required String postUid, required int index}) async {
+    emit(HomeDeletePostLoadingState());
+    await FirebaseFirestore.instance
+        .collection("posts")
+        .doc(postUid)
+        .delete()
+        .then((value) {
+      myPosts.removeAt(index);
+      getPosts();
+      emit(HomeDeletePostSuccesState());
+    }).catchError((onError) {
+      HomeDeletePostFailedState();
+    });
+  }
+
+  Future<void> updatePost({
+    required String postId,
+    required String text,
+  }) async {
+    emit(HomeUpdatePostLoadingState());
+    if (postImage != null) {
+      await FirebaseStorage.instance
+          .ref("posts_images/${postImage!.path.split('/').last}")
+          .putFile(postImage!)
+          .then((p0) {
+        p0.ref.getDownloadURL().then((value) {
+          FirebaseFirestore.instance.collection("posts").doc(postId).update({
+            "postTitle": text,
+            "mediaUrl": value,
+          }).then((value) async {
+            deletePostImage();
+            await getPosts();
+            await getMyPosts();
+            emit(HomeUpdatePostSuccesState());
+          }).catchError((onError) {
+            emit(HomeUpdatePostFailedState());
+          });
+        });
+      }).catchError((onError) {
+        emit(HomeUpdatePostFailedState());
+      });
+    } else {
+      await FirebaseFirestore.instance.collection("posts").doc(postId).update({
+        "postTitle": text,
+      }).then((value) {
+        emit(HomeUpdatePostSuccesState());
+      }).catchError((onError) {
+        emit(HomeUpdatePostFailedState());
+      });
+    }
   }
 }
