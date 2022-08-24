@@ -63,55 +63,58 @@ class _UpdatePostScreenState extends State<UpdatePostScreen> {
                       height: height * .01,
                     ),
                     widget.post.mediaUrl != ""
-                        ? Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(
-                                  14,
+                        ? SizedBox(
+                            height: height * .34,
+                            child: Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                    14,
+                                  ),
+                                  child: cubit.postImage == null
+                                      ? CachedNetworkImage(
+                                          imageUrl: widget.post.mediaUrl,
+                                          height: height * .3,
+                                          maxHeightDiskCache: 200,
+                                          fit: BoxFit.cover,
+                                          key: UniqueKey(),
+                                          placeholder: (context, url) =>
+                                              Container(
+                                            color: Colors.black12,
+                                          ),
+                                          errorWidget: (context, url, error) =>
+                                              Container(
+                                            color: Colors.black12,
+                                            child: const Icon(Icons.report),
+                                          ),
+                                        )
+                                      : Image.file(
+                                          cubit.postImage!,
+                                          height: height * .3,
+                                          fit: BoxFit.cover,
+                                        ),
                                 ),
-                                child: cubit.postImage == null
-                                    ? CachedNetworkImage(
-                                        imageUrl: widget.post.mediaUrl,
-                                        height: height * .3,
-                                        maxHeightDiskCache: 200,
-                                        fit: BoxFit.cover,
-                                        key: UniqueKey(),
-                                        placeholder: (context, url) =>
-                                            Container(
-                                          color: Colors.black12,
-                                        ),
-                                        errorWidget: (context, url, error) =>
-                                            Container(
-                                          color: Colors.black12,
-                                          child: const Icon(Icons.report),
-                                        ),
-                                      )
-                                    : Image.file(
-                                        cubit.postImage!,
-                                        height: height * .3,
-                                        fit: BoxFit.cover,
+                                Align(
+                                  alignment: Alignment.topRight,
+                                  child: InkWell(
+                                    onTap: () {
+                                      cubit.pickPostImage();
+                                    },
+                                    child: Container(
+                                      height: height * .054,
+                                      width: width * .1,
+                                      decoration: const BoxDecoration(
+                                          color: Colors.blue,
+                                          shape: BoxShape.circle),
+                                      child: const Icon(
+                                        Icons.edit,
+                                        color: Colors.white,
                                       ),
-                              ),
-                              Align(
-                                alignment: Alignment.topRight,
-                                child: InkWell(
-                                  onTap: () {
-                                    cubit.pickPostImage();
-                                  },
-                                  child: Container(
-                                    height: height * .054,
-                                    width: width * .1,
-                                    decoration: const BoxDecoration(
-                                        color: Colors.blue,
-                                        shape: BoxShape.circle),
-                                    child: const Icon(
-                                      Icons.edit,
-                                      color: Colors.white,
                                     ),
                                   ),
                                 ),
-                              )
-                            ],
+                              ],
+                            ),
                           )
                         : const SizedBox(),
                     SizedBox(height: height * .01),

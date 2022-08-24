@@ -120,3 +120,30 @@ class HomeUpdatePostSuccesState extends HomeLayoutStates {}
 class HomeUpdatePostFailedState extends HomeLayoutStates {}
 
 class HomeUpdatePostLoadingState extends HomeLayoutStates {}
+
+//states to update UserInfo
+
+class HomeChangeUserGender extends HomeLayoutStates {}
+
+class HomeUpdateUserCredentialLoadingState extends HomeLayoutStates {}
+
+class HomeUpdateUserCredentialFailedState extends HomeLayoutStates {}
+
+class HomeUpdateUserCredentialSuccesState extends HomeLayoutStates {}
+
+//states to send Notification
+class HomeSendNotificationLoadingState extends HomeLayoutStates {}
+
+class HomeSendNotificationSuccesState extends HomeLayoutStates {}
+
+class HomeSendNotificationFailedState extends HomeLayoutStates {}
+
+//states to get notification
+class HomeGetUserNotificationState extends HomeLayoutStates {}
+
+//states to delete user notification
+class HomeDeleteUserNotificationLoadingState extends HomeLayoutStates {}
+
+class HomeDeleteUserNotificationFailedState extends HomeLayoutStates {}
+
+class HomeDeleteUserNotificationSuccesState extends HomeLayoutStates {}

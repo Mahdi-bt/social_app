@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:social_app/layout/cubit/states.dart';
 import 'package:social_app/models/chatModel.dart';
 import 'package:social_app/models/commentModel.dart';
+import 'package:social_app/models/notificationModel.dart';
 import 'package:social_app/models/postModel.dart';
 import 'package:social_app/models/userModel.dart';
 import 'package:social_app/modules/chat/contact_screen.dart';
@@ -18,6 +20,14 @@ import 'package:social_app/modules/notifications/notification.dart';
 import 'package:social_app/modules/settings/settings_screen.dart';
 import 'package:social_app/shared/components.dart';
 import 'package:social_app/shared/local/CacheHelper.dart';
+
+import '../../modules/settings/update_user_info_screen.dart';
+
+extension NotificationNa on NotificationType {
+  String get name => describeEnum(this);
+}
+
+enum NotificationType { postLike, postComment, postReport }
 
 class HomeCubit extends Cubit<HomeLayoutStates> {
   HomeCubit() : super(HomeInitialState());
@@ -40,6 +50,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     if (index == 1) {
       getUsers();
     }
+
     currentIndex = index;
     emit(HomeChangeBottomNavState());
   }
@@ -214,6 +225,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
 
   likePost({required String postId}) async {
     emit(HomeLikePostLoadingState());
+    String reciver = "";
     await FirebaseFirestore.instance
         .collection("posts")
         .doc(postId)
@@ -227,12 +239,20 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
           .then((value) {
         PostModel model = PostModel.fromJson(value.data()!);
         model.postLikes++;
+        reciver = model.posterUid;
         FirebaseFirestore.instance
             .collection("posts")
             .doc(postId)
             .set(model.toMap());
       }).then((value) {
         postsLikes[postId]!.add(currentUser!.uid);
+        sendNotification(
+            reciverUserUid: reciver,
+            senderUserUid: currentUser!.uid,
+            notificationType: NotificationType.postLike,
+            postUid: postId,
+            userName: currentUser!.userName);
+
         emit(HomeLikePostSuccesState());
       });
     }).catchError((onError) {
@@ -288,6 +308,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
 
   commentPost({required String postUid, required String commentText}) async {
     emit(HomeCommentPostLoadingState());
+    String reciver = "";
     CommentModel _comment = CommentModel(
         commentText: commentText,
         commentUserPic: currentUser!.profilePic,
@@ -307,12 +328,20 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
           .then((value) {
         PostModel model = PostModel.fromJson(value.data()!);
         model.postComment++;
+        reciver = model.posterUid;
         FirebaseFirestore.instance
             .collection("posts")
             .doc(postUid)
             .set(model.toMap());
       }).then((value) {
         postsComment[postUid]!.add(_comment);
+        sendNotification(
+          reciverUserUid: reciver,
+          senderUserUid: currentUser!.uid,
+          notificationType: NotificationType.postComment,
+          postUid: postUid,
+          userName: currentUser!.userName,
+        );
         emit(HomeCommentPostSuccesState());
       }).catchError((onError) {
         emit(HomeCommentPostFailedState());
@@ -522,5 +551,207 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         emit(HomeUpdatePostFailedState());
       });
     }
+  }
+
+  gender? userGender = gender.Female;
+
+  void changeUserGender(gender? value) {
+    userGender = value;
+    emit(HomeChangeUserGender());
+  }
+
+  File? newProfileImage;
+
+  pickProfileImage() async {
+    var pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedFile != null) {
+      newProfileImage = File(pickedFile.path);
+      debugPrint(pickedFile.path);
+      emit(HomePickImageSuccesState());
+    } else {
+      debugPrint('No image selected.');
+      emit(HomePickImageFailedState());
+    }
+  }
+
+  File? newCoverImage;
+
+  pickNewCoverImage() async {
+    var pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedFile != null) {
+      newCoverImage = File(pickedFile.path);
+      debugPrint(pickedFile.path);
+      emit(HomePickImageSuccesState());
+    } else {
+      debugPrint('No image selected.');
+      emit(HomePickImageFailedState());
+    }
+  }
+
+  deleteNewProfileImage() async {
+    newProfileImage = null;
+    emit(HomePickMessageImageDeleteState());
+  }
+
+  deleteNewCoverImage() async {
+    newProfileImage = null;
+    emit(HomePickMessageImageDeleteState());
+  }
+
+  Future<void> updateUserCredential(
+      {required String username,
+      required String phoneNumber,
+      required String gender}) async {
+    emit(HomeUpdateUserCredentialLoadingState());
+    UserModel newUserModel = currentUser!;
+    newUserModel.userName = username;
+    newUserModel.phoneNumber = phoneNumber;
+    newUserModel.gender = gender;
+    if (newProfileImage != null) {
+      await FirebaseStorage.instance
+          .ref("users_photo/${newProfileImage!.path.split('/').last}")
+          .putFile(newProfileImage!)
+          .then((p0) {
+        p0.ref.getDownloadURL().then((value) {
+          newUserModel.profilePic = value;
+
+          FirebaseFirestore.instance
+              .collection("users")
+              .doc(currentUser!.uid)
+              .set(newUserModel.toMap())
+              .then((value) {
+            deleteNewProfileImage();
+          }).catchError((onError) {
+            emit(HomeUpdateUserCredentialFailedState());
+          });
+        });
+      });
+    }
+    if (newCoverImage != null) {
+      await FirebaseStorage.instance
+          .ref("users_photo/${newCoverImage!.path.split('/').last}")
+          .putFile(newCoverImage!)
+          .then((p0) {
+        p0.ref.getDownloadURL().then((value) {
+          newUserModel.coverPic = value;
+          FirebaseFirestore.instance
+              .collection("users")
+              .doc(currentUser!.uid)
+              .set(newUserModel.toMap())
+              .then((value) {
+            deleteNewProfileImage();
+          }).catchError((onError) {
+            emit(HomeUpdateUserCredentialFailedState());
+          });
+        });
+      });
+    }
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .set(newUserModel.toMap())
+        .then((value) {
+      deleteNewProfileImage();
+      emit(HomeUpdateUserCredentialSuccesState());
+    }).catchError((onError) {
+      emit(HomeUpdateUserCredentialFailedState());
+    });
+  }
+
+  Future<void> sendNotification({
+    required String reciverUserUid,
+    required String senderUserUid,
+    required NotificationType notificationType,
+    required String userName,
+    required String postUid,
+  }) async {
+    emit(HomeSendNotificationLoadingState());
+    NotificationModel notificationModel = NotificationModel(
+        date: DateFormat('kk:mm EEE d MMM').format(DateTime.now()),
+        reciverUid: reciverUserUid,
+        senderUid: senderUserUid,
+        type: notificationType.name,
+        postUid: postUid,
+        userName: userName);
+    switch (notificationType) {
+      case NotificationType.postLike:
+        FirebaseFirestore.instance
+            .collection("users")
+            .doc(reciverUserUid)
+            .collection("notification")
+            .add(notificationModel.toMap())
+            .then((value) {
+          emit(HomeSendNotificationSuccesState());
+        }).catchError((onError) {
+          emit(HomeSendNotificationFailedState());
+        });
+        break;
+      case NotificationType.postComment:
+        FirebaseFirestore.instance
+            .collection("users")
+            .doc(reciverUserUid)
+            .collection("notification")
+            .add(notificationModel.toMap())
+            .then((value) {
+          emit(HomeSendNotificationSuccesState());
+        }).catchError((onError) {
+          emit(HomeSendNotificationFailedState());
+        });
+        break;
+
+      case NotificationType.postReport:
+        FirebaseFirestore.instance
+            .collection("users")
+            .doc(reciverUserUid)
+            .collection("notification")
+            .add(notificationModel.toMap())
+            .then((value) {
+          emit(HomeSendNotificationSuccesState());
+        }).catchError((onError) {
+          emit(HomeSendNotificationFailedState());
+        });
+        break;
+    }
+  }
+
+  List<NotificationModel> notification = [];
+  void getNotification() {
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .collection("notification")
+        .orderBy('date')
+        .snapshots()
+        .listen((event) {
+      notification = [];
+      for (var element in event.docs) {
+        notification.add(NotificationModel.fromJson(element.data()));
+      }
+      emit(HomeGetUserNotificationState());
+    });
+  }
+
+  deleteUserNotification() {
+    emit(HomeDeleteUserNotificationLoadingState());
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .collection("notification")
+        .get()
+        .then((value) {
+      for (var element in value.docs) {
+        element.reference.delete();
+      }
+      notification = [];
+      emit(HomeDeleteUserNotificationSuccesState());
+    }).catchError((onError) {
+      emit(HomeDeleteUserNotificationFailedState());
+    });
   }
 }

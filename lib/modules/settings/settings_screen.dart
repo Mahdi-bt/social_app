@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_app/layout/cubit/cubit.dart';
 import 'package:social_app/layout/cubit/states.dart';
 import 'package:social_app/modules/settings/posts_screen.dart';
+import 'package:social_app/modules/settings/update_user_info_screen.dart';
 import 'package:social_app/shared/components.dart';
 import 'package:social_app/shared/styles/styles.dart';
 
@@ -89,6 +90,17 @@ class SettingsScreen extends StatelessWidget {
             height: height * .02,
           ),
           buildProfileItem(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) {
+                  return BlocProvider.value(
+                    value: BlocProvider.of<HomeCubit>(context),
+                    child: UpdateUserCredential(
+                        userModel: HomeCubit.get(context).currentUser!),
+                  );
+                },
+              ));
+            },
             height: height,
             prefixIcon: Icons.edit,
             suffixIcon: Icons.arrow_forward_ios_rounded,
