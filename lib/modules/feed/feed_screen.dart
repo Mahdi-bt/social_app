@@ -25,19 +25,83 @@ class FeedScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 BlocBuilder<HomeCubit, HomeLayoutStates>(
-                  builder: (context, state) => CircleAvatar(
-                    radius: 20,
-                    backgroundImage: NetworkImage(
-                      HomeCubit.get(context).currentUser!.profilePic,
-                    ),
-                  ),
+                  builder: (context, state) {
+                    var cubit = HomeCubit.get(context);
+                    return IconButton(
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(28))),
+                          builder: (context) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 15, horizontal: 10),
+                              height: height * .28,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Sort Feed By: ',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headline6!
+                                        .copyWith(
+                                          color: Colors.black,
+                                        ),
+                                  ),
+                                  Expanded(
+                                    child: ListTile(
+                                      title: const Text('All'),
+                                      leading: Radio<SortType>(
+                                        value: SortType.all,
+                                        groupValue: cubit.sortType,
+                                        onChanged: (SortType? value) =>
+                                            cubit.changeSortType(value),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: ListTile(
+                                      title: const Text(
+                                          'Only Follwing Users Posts'),
+                                      leading: Radio<SortType>(
+                                        value: SortType.onlyfollwing,
+                                        groupValue: cubit.sortType,
+                                        onChanged: (SortType? value) =>
+                                            cubit.changeSortType(value),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: ListTile(
+                                      title: const Text('Trending Posts'),
+                                      leading: Radio<SortType>(
+                                        value: SortType.popular,
+                                        groupValue: cubit.sortType,
+                                        onChanged: (SortType? value) =>
+                                            cubit.changeSortType(value),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.sort_rounded,
+                      ),
+                    );
+                  },
                 ),
                 Text(
                   'Feeds',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headline4!
-                      .copyWith(color: Colors.black),
+                  style: Theme.of(context).textTheme.headline5!.copyWith(
+                        color: Colors.black,
+                        fontSize: 28,
+                      ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.push(

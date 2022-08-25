@@ -27,7 +27,13 @@ extension NotificationNa on NotificationType {
   String get name => describeEnum(this);
 }
 
-enum NotificationType { postLike, postComment, postReport }
+enum NotificationType { postLike, postComment, postReport, followUser }
+
+enum SortType {
+  popular,
+  onlyfollwing,
+  all,
+}
 
 class HomeCubit extends Cubit<HomeLayoutStates> {
   HomeCubit() : super(HomeInitialState());
@@ -191,44 +197,92 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     postsComment = {};
     FirebaseFirestore.instance
         .collection("posts")
-        .orderBy('postTime')
+        .orderBy('postTime', descending: false)
         .get()
         .then((value) async {
-      for (var element in value.docs) {
-        if (element.data()['postLikes'] != 0) {
-          await element.reference.collection("likes").get().then((value) {
-            userLikesUid = [];
-            for (var likesElment in value.docs) {
-              userLikesUid.add(likesElment.id);
-            }
-            postsLikes[element.id] = userLikesUid;
-            // print(postsLikes[element.id]);
-          });
-        } else {
-          postsLikes[element.id] = [];
-        }
+      switch (sortType) {
+        case SortType.onlyfollwing:
+          for (var element in value.docs) {
+            if (followingUsers.contains(element.data()['posterUid'])) {
+              if (element.data()['postLikes'] != 0) {
+                await element.reference.collection("likes").get().then((value) {
+                  userLikesUid = [];
+                  for (var likesElment in value.docs) {
+                    userLikesUid.add(likesElment.id);
+                  }
+                  postsLikes[element.id] = userLikesUid;
+                  // print(postsLikes[element.id]);
+                });
+              } else {
+                postsLikes[element.id] = [];
+              }
 
-        if (element.data()['postComment'] != 0) {
-          await element.reference.collection("comment").get().then((value) {
-            usersComment = [];
-            for (var commentElment in value.docs) {
-              usersComment.add(CommentModel.formJson(commentElment.data()));
-            }
-            postsComment[element.id] = usersComment;
-            // print(postsLikes[element.id]);
-          });
-        } else {
-          postsComment[element.id] = [];
-        }
+              if (element.data()['postComment'] != 0) {
+                await element.reference
+                    .collection("comment")
+                    .get()
+                    .then((value) {
+                  usersComment = [];
+                  for (var commentElment in value.docs) {
+                    usersComment
+                        .add(CommentModel.formJson(commentElment.data()));
+                  }
+                  postsComment[element.id] = usersComment;
+                  // print(postsLikes[element.id]);
+                });
+              } else {
+                postsComment[element.id] = [];
+              }
 
-        postsUid.add(element.id);
-        posts.add(PostModel.fromJson(element.data()));
+              postsUid.add(element.id);
+              posts.add(PostModel.fromJson(element.data()));
+            }
+          }
+
+          emit(HomeGetPostSuccesState());
+          break;
+
+        case SortType.all:
+          for (var element in value.docs) {
+            if (element.data()['postLikes'] != 0) {
+              await element.reference.collection("likes").get().then((value) {
+                userLikesUid = [];
+                for (var likesElment in value.docs) {
+                  userLikesUid.add(likesElment.id);
+                }
+                postsLikes[element.id] = userLikesUid;
+                // print(postsLikes[element.id]);
+              });
+            } else {
+              postsLikes[element.id] = [];
+            }
+
+            if (element.data()['postComment'] != 0) {
+              await element.reference.collection("comment").get().then((value) {
+                usersComment = [];
+                for (var commentElment in value.docs) {
+                  usersComment.add(CommentModel.formJson(commentElment.data()));
+                }
+                postsComment[element.id] = usersComment;
+                // print(postsLikes[element.id]);
+              });
+            } else {
+              postsComment[element.id] = [];
+            }
+
+            postsUid.add(element.id);
+            posts.add(PostModel.fromJson(element.data()));
+          }
+
+          emit(HomeGetPostSuccesState());
+          break;
+        case SortType.popular:
+          break;
       }
+
       // postsLikes.forEach((key, value) {
       //   print("$key,$value");
       // });
-
-      emit(HomeGetPostSuccesState());
     }).catchError((onError) {
       emit(HomeGetPostFailedSate());
     });
@@ -577,6 +631,15 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     }
   }
 
+  SortType sortType = SortType.all;
+  void changeSortType(SortType? value) {
+    sortType = value!;
+
+    emit(HomeFeedChangeSortTypeState());
+
+    getPosts();
+  }
+
   gender? userGender = gender.Female;
 
   void changeUserGender(gender? value) {
@@ -693,7 +756,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     required String senderUserUid,
     required NotificationType notificationType,
     required String userName,
-    required String postUid,
+    String? postUid,
   }) async {
     emit(HomeSendNotificationLoadingState());
     NotificationModel notificationModel = NotificationModel(
@@ -701,7 +764,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         reciverUid: reciverUserUid,
         senderUid: senderUserUid,
         type: notificationType.name,
-        postUid: postUid,
+        postUid: postUid ?? "",
         userName: userName);
     switch (notificationType) {
       case NotificationType.postLike:
@@ -730,6 +793,18 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         break;
 
       case NotificationType.postReport:
+        FirebaseFirestore.instance
+            .collection("users")
+            .doc(reciverUserUid)
+            .collection("notification")
+            .add(notificationModel.toMap())
+            .then((value) {
+          emit(HomeSendNotificationSuccesState());
+        }).catchError((onError) {
+          emit(HomeSendNotificationFailedState());
+        });
+        break;
+      case NotificationType.followUser:
         FirebaseFirestore.instance
             .collection("users")
             .doc(reciverUserUid)
@@ -799,6 +874,12 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         "follow": true,
       }).then((value) {
         followingUsers.add(userId);
+        sendNotification(
+          reciverUserUid: userId,
+          senderUserUid: currentUser!.uid,
+          notificationType: NotificationType.followUser,
+          userName: currentUser!.userName,
+        );
         emit(HomeFollowPersonSuccesState());
       }).catchError((onError) {
         emit(HomeFollowPersonFailedState());
@@ -820,6 +901,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
       for (var element in value.docs) {
         followingUsers.add(element.id);
       }
+
       emit(HomeGetFollowingUsersSuccesState());
     }).catchError((onError) {
       emit(HomeGetFollowingUsersFailedState());

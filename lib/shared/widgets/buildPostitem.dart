@@ -272,6 +272,11 @@ class buildPostItem extends StatelessWidget {
                         .then((value) {});
                     showModalBottomSheet(
                       context: context,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(28),
+                        ),
+                      ),
                       isScrollControlled: true,
                       useRootNavigator: true,
                       builder: (context) {
@@ -420,7 +425,14 @@ class buildPostItem extends StatelessWidget {
                                               myController: myController,
                                             ),
                                           ),
-                                          IconButton(
+                                          SizedBox(
+                                            width: width * 0.015,
+                                          ),
+                                          Container(
+                                            decoration: const BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.lightBlue),
+                                            child: IconButton(
                                               onPressed: () async {
                                                 await cubit.commentPost(
                                                     postUid: postUid,
@@ -429,7 +441,11 @@ class buildPostItem extends StatelessWidget {
                                                 myController.clear();
                                               },
                                               icon: const Icon(
-                                                  Icons.send_rounded))
+                                                Icons.send_rounded,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          )
                                         ],
                                       ),
                                     ),

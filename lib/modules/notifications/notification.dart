@@ -104,37 +104,154 @@ class buildNotificationitem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: HexColor('#EBF1FE'),
-            child: Icon(
-                notificationModel.type == "postLike"
-                    ? IconBroken.Heart
-                    : Icons.comment,
-                color: notificationModel.type == "postLike"
-                    ? Colors.red
-                    : Colors.grey),
+    switch (notificationModel.type) {
+      case "postLike":
+        return Container(
+          width: width,
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: HexColor('#EBF1FE'),
+                child: const Icon(IconBroken.Heart, color: Colors.red),
+              ),
+              SizedBox(
+                width: width * .05,
+              ),
+              Expanded(
+                child: Text(
+                  "${notificationModel.userName} like your post",
+                  style: Theme.of(context)
+                      .textTheme
+                      .headline6!
+                      .copyWith(fontSize: 18),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(
+                width: width * .017,
+              ),
+              Text(
+                notificationModel.date,
+                maxLines: 2,
+                style:
+                    Theme.of(context).textTheme.caption!.copyWith(fontSize: 16),
+              ),
+            ],
           ),
-          SizedBox(
-            width: width * .05,
+        );
+      case "postComment":
+        return Container(
+          width: width,
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: HexColor('#EBF1FE'),
+                child: const Icon(IconBroken.Message, color: Colors.grey),
+              ),
+              SizedBox(
+                width: width * .05,
+              ),
+              Expanded(
+                child: Text(
+                  "${notificationModel.userName} Comment your post",
+                  style: Theme.of(context)
+                      .textTheme
+                      .headline6!
+                      .copyWith(fontSize: 18),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(
+                width: width * .017,
+              ),
+              Text(
+                notificationModel.date,
+                maxLines: 2,
+                style:
+                    Theme.of(context).textTheme.caption!.copyWith(fontSize: 16),
+              ),
+            ],
           ),
-          Expanded(
-            child: Text(
-              notificationModel.type == "postComment"
-                  ? "${notificationModel.userName} comment your post"
-                  : "${notificationModel.userName} like your post",
-              style: Theme.of(context).textTheme.headline6,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+        );
+      case "postReport":
+        return Container(
+          width: width,
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: HexColor('#EBF1FE'),
+                child: const Icon(Icons.report, color: Colors.red),
+              ),
+              SizedBox(
+                width: width * .05,
+              ),
+              Expanded(
+                child: Text(
+                  "Your have recivce a report to your post",
+                  style: Theme.of(context)
+                      .textTheme
+                      .headline6!
+                      .copyWith(fontSize: 18),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(
+                width: width * .017,
+              ),
+              Text(
+                notificationModel.date,
+                maxLines: 2,
+                style:
+                    Theme.of(context).textTheme.caption!.copyWith(fontSize: 16),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
+      case "followUser":
+        return Container(
+          width: width,
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: HexColor('#EBF1FE'),
+                child: const Icon(IconBroken.Add_User, color: Colors.lightBlue),
+              ),
+              SizedBox(
+                width: width * .05,
+              ),
+              Expanded(
+                child: Text(
+                  "${notificationModel.userName} Start Follwing you",
+                  style: Theme.of(context)
+                      .textTheme
+                      .headline6!
+                      .copyWith(fontSize: 18),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(
+                width: width * .017,
+              ),
+              Text(
+                notificationModel.date,
+                maxLines: 2,
+                style:
+                    Theme.of(context).textTheme.caption!.copyWith(fontSize: 16),
+              ),
+            ],
+          ),
+        );
+    }
+
+    return const SizedBox();
   }
 }
 

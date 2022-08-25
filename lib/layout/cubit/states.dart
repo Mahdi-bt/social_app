@@ -175,3 +175,6 @@ class HomeUnfollowUserLoadingState extends HomeLayoutStates {}
 class HomeUnfollowUserSuccesState extends HomeLayoutStates {}
 
 class HomeUnfollowUserFailedState extends HomeLayoutStates {}
+
+//state to change Sort Type
+class HomeFeedChangeSortTypeState extends HomeLayoutStates {}
