@@ -20,144 +20,170 @@ class SettingsScreen extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          SizedBox(
-            height: height * .34,
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: CachedNetworkImage(
-                    imageUrl: context.read<HomeCubit>().currentUser!.coverPic,
-                    height: height * .3,
-                    maxHeightDiskCache: 150,
-                    fit: BoxFit.cover,
-                    key: UniqueKey(),
-                    placeholder: (context, url) => Container(
-                      color: Colors.black12,
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: Colors.black12,
-                      child: const Icon(Icons.report),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  left: width * .5 - 53,
-                  child: CircleAvatar(
-                    radius: 48,
-                    backgroundColor: Colors.grey,
-                    child: CircleAvatar(
-                        backgroundColor: Colors.transparent,
-                        backgroundImage: CachedNetworkImageProvider(
-                          context.read<HomeCubit>().currentUser!.profilePic,
-                        ),
-                        radius: 45),
-                  ),
-                )
-              ],
-            ),
-          ),
-          SizedBox(
-            height: height * .01,
-          ),
-          Text(
-            context.read<HomeCubit>().currentUser!.userName,
-            style: Theme.of(context).textTheme.headline5,
-          ),
-          SizedBox(
-            height: height * .02,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: const [
-              ProfileInfo(
-                numbers: "123",
-                string: "Followers",
-              ),
-              ProfileInfo(
-                numbers: "2340",
-                string: "Following",
-              ),
-              ProfileInfo(
-                numbers: "3",
-                string: "Posts",
-              ),
-            ],
-          ),
-          SizedBox(
-            height: height * .02,
-          ),
-          buildProfileItem(
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) {
-                  return BlocProvider.value(
-                    value: BlocProvider.of<HomeCubit>(context),
-                    child: UpdateUserCredential(
-                        userModel: HomeCubit.get(context).currentUser!),
-                  );
-                },
-              ));
-            },
-            height: height,
-            prefixIcon: Icons.edit,
-            suffixIcon: Icons.arrow_forward_ios_rounded,
-            text: 'Edit Profile Information',
-          ),
-          SizedBox(
-            height: height * .014,
-          ),
-          BlocConsumer<HomeCubit, HomeLayoutStates>(
-            builder: (context, state) {
-              var cubit = HomeCubit.get(context);
-              return buildProfileItem(
-                onTap: () async {
-                  if (user != null) {
-                    await cubit.logOutFromGoogle(context);
-                  } else {
-                    await cubit.logOut(context);
-                  }
-                },
-                height: height,
-                prefixIcon: Icons.exit_to_app,
-                suffixIcon: Icons.arrow_forward_ios_rounded,
-                text: 'Exit From My Account ',
+        child: BlocConsumer<HomeCubit, HomeLayoutStates>(
+          listener: (context, state) {
+            // TODO: implement listener
+          },
+          builder: (context, state) {
+            var cubit = HomeCubit.get(context);
+            if (state is HomeGetMyPostLoadingState) {
+              return const Center(
+                child: CircularProgressIndicator(),
               );
-            },
-            listener: (context, state) {},
-          ),
-          SizedBox(
-            height: height * .014,
-          ),
-          buildProfileItem(
-            height: height,
-            onTap: () {
-              HomeCubit.get(context).getMyPosts();
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) {
-                  return BlocProvider.value(
-                    value: BlocProvider.of<HomeCubit>(context),
-                    child: MyPostsScreen(),
-                  );
-                },
-              ));
-            },
-            prefixIcon: Icons.post_add_rounded,
-            suffixIcon: Icons.arrow_forward_ios_rounded,
-            text: 'Show My Posts ',
-          ),
-          SizedBox(
-            height: height * .014,
-          ),
-          buildProfileItem(
-            height: height,
-            prefixIcon: Icons.security_rounded,
-            suffixIcon: Icons.arrow_forward_ios_rounded,
-            text: 'Update Security Info ',
-          ),
-        ]),
+            } else {
+              return Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      height: height * .34,
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(
+                              imageUrl: context
+                                  .read<HomeCubit>()
+                                  .currentUser!
+                                  .coverPic,
+                              height: height * .3,
+                              maxHeightDiskCache: 150,
+                              fit: BoxFit.cover,
+                              key: UniqueKey(),
+                              placeholder: (context, url) => Container(
+                                color: Colors.black12,
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: Colors.black12,
+                                child: const Icon(Icons.report),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            left: width * .5 - 53,
+                            child: CircleAvatar(
+                              radius: 48,
+                              backgroundColor: Colors.grey,
+                              child: CircleAvatar(
+                                  backgroundColor: Colors.transparent,
+                                  backgroundImage: CachedNetworkImageProvider(
+                                    context
+                                        .read<HomeCubit>()
+                                        .currentUser!
+                                        .profilePic,
+                                  ),
+                                  radius: 45),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: height * .01,
+                    ),
+                    Text(
+                      context.read<HomeCubit>().currentUser!.userName,
+                      style: Theme.of(context).textTheme.headline5,
+                    ),
+                    SizedBox(
+                      height: height * .02,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ProfileInfo(
+                          numbers: cubit.followersUsers.length.toString(),
+                          string: "Followers",
+                        ),
+                        ProfileInfo(
+                          numbers: cubit.followingUsers.length.toString(),
+                          string: "Following",
+                        ),
+                        ProfileInfo(
+                          numbers: context
+                              .read<HomeCubit>()
+                              .myPosts
+                              .length
+                              .toString(),
+                          string: "Posts",
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      height: height * .02,
+                    ),
+                    buildProfileItem(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) {
+                            return BlocProvider.value(
+                              value: BlocProvider.of<HomeCubit>(context),
+                              child: UpdateUserCredential(
+                                  userModel:
+                                      HomeCubit.get(context).currentUser!),
+                            );
+                          },
+                        ));
+                      },
+                      height: height,
+                      prefixIcon: Icons.edit,
+                      suffixIcon: Icons.arrow_forward_ios_rounded,
+                      text: 'Edit Profile Information',
+                    ),
+                    SizedBox(
+                      height: height * .014,
+                    ),
+                    BlocConsumer<HomeCubit, HomeLayoutStates>(
+                      builder: (context, state) {
+                        var cubit = HomeCubit.get(context);
+                        return buildProfileItem(
+                          onTap: () async {
+                            if (user != null) {
+                              await cubit.logOutFromGoogle(context);
+                            } else {
+                              await cubit.logOut(context);
+                            }
+                          },
+                          height: height,
+                          prefixIcon: Icons.exit_to_app,
+                          suffixIcon: Icons.arrow_forward_ios_rounded,
+                          text: 'Exit From My Account ',
+                        );
+                      },
+                      listener: (context, state) {},
+                    ),
+                    SizedBox(
+                      height: height * .014,
+                    ),
+                    buildProfileItem(
+                      height: height,
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) {
+                            return BlocProvider.value(
+                              value: BlocProvider.of<HomeCubit>(context),
+                              child: MyPostsScreen(),
+                            );
+                          },
+                        ));
+                      },
+                      prefixIcon: Icons.post_add_rounded,
+                      suffixIcon: Icons.arrow_forward_ios_rounded,
+                      text: 'Show My Posts ',
+                    ),
+                    SizedBox(
+                      height: height * .014,
+                    ),
+                    buildProfileItem(
+                      height: height,
+                      prefixIcon: Icons.security_rounded,
+                      suffixIcon: Icons.arrow_forward_ios_rounded,
+                      text: 'Update Security Info ',
+                    ),
+                  ]);
+            }
+          },
+        ),
       ),
     ));
   }

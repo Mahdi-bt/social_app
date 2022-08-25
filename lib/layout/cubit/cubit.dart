@@ -47,6 +47,11 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     const SettingsScreen()
   ];
   void changeBottomNavState(int index) {
+    if (index == 3) {
+      getMyPosts();
+      getFollowersUser();
+      getFollowingUser();
+    }
     if (index == 1) {
       getUsers();
     }
@@ -87,6 +92,8 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         .get()
         .then((value) {
       currentUser = UserModel.fromJson(value.data()!);
+      getFollowingUser();
+      getFollowersUser();
       emit(HomeGetUserDataSuccesState());
       print(value.data());
     }).catchError((onError) {
@@ -182,7 +189,11 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     postsUid = [];
     postsLikes = {};
     postsComment = {};
-    FirebaseFirestore.instance.collection("posts").get().then((value) async {
+    FirebaseFirestore.instance
+        .collection("posts")
+        .orderBy('postTime')
+        .get()
+        .then((value) async {
       for (var element in value.docs) {
         if (element.data()['postLikes'] != 0) {
           await element.reference.collection("likes").get().then((value) {
@@ -246,14 +257,17 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
             .set(model.toMap());
       }).then((value) {
         postsLikes[postId]!.add(currentUser!.uid);
-        sendNotification(
-            reciverUserUid: reciver,
-            senderUserUid: currentUser!.uid,
-            notificationType: NotificationType.postLike,
-            postUid: postId,
-            userName: currentUser!.userName);
-
-        emit(HomeLikePostSuccesState());
+        if (reciver == currentUser!.uid) {
+          emit(HomeLikePostSuccesState());
+        } else {
+          sendNotification(
+              reciverUserUid: reciver,
+              senderUserUid: currentUser!.uid,
+              notificationType: NotificationType.postLike,
+              postUid: postId,
+              userName: currentUser!.userName);
+          emit(HomeLikePostSuccesState());
+        }
       });
     }).catchError((onError) {
       emit(HomeGetAllUsersFailedState());
@@ -309,7 +323,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
   commentPost({required String postUid, required String commentText}) async {
     emit(HomeCommentPostLoadingState());
     String reciver = "";
-    CommentModel _comment = CommentModel(
+    CommentModel comment = CommentModel(
         commentText: commentText,
         commentUserPic: currentUser!.profilePic,
         commentUserUid: currentUser!.uid,
@@ -319,7 +333,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         .doc(postUid)
         .collection("comment")
         .doc(currentUser!.uid)
-        .set(_comment.toMap())
+        .set(comment.toMap())
         .then((value) {
       FirebaseFirestore.instance
           .collection("posts")
@@ -334,14 +348,19 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
             .doc(postUid)
             .set(model.toMap());
       }).then((value) {
-        postsComment[postUid]!.add(_comment);
-        sendNotification(
-          reciverUserUid: reciver,
-          senderUserUid: currentUser!.uid,
-          notificationType: NotificationType.postComment,
-          postUid: postUid,
-          userName: currentUser!.userName,
-        );
+        postsComment[postUid]!.add(comment);
+
+        if (reciver == currentUser!.uid) {
+        } else {
+          sendNotification(
+            reciverUserUid: reciver,
+            senderUserUid: currentUser!.uid,
+            notificationType: NotificationType.postComment,
+            postUid: postUid,
+            userName: currentUser!.userName,
+          );
+        }
+        getUsersCommentList(Uid: postUid);
         emit(HomeCommentPostSuccesState());
       }).catchError((onError) {
         emit(HomeCommentPostFailedState());
@@ -446,7 +465,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         .collection("chats")
         .doc(reciverId)
         .collection("messages")
-        .orderBy('dateTime')
+        .orderBy('dateTime', descending: true)
         .snapshots()
         .listen((event) {
       chats = [];
@@ -509,6 +528,11 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         .delete()
         .then((value) {
       myPosts.removeAt(index);
+      posts.removeAt(index);
+      postsLikes.removeWhere((key, value) => key == postUid);
+      postsComment.removeWhere((key, value) => key == postUid);
+
+      getMyPosts();
       getPosts();
       emit(HomeDeletePostSuccesState());
     }).catchError((onError) {
@@ -752,6 +776,103 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
       emit(HomeDeleteUserNotificationSuccesState());
     }).catchError((onError) {
       emit(HomeDeleteUserNotificationFailedState());
+    });
+  }
+
+  List<String> followingUsers = [];
+  List<String> followersUsers = [];
+
+  Future<void> followPerson({required String userId}) async {
+    emit(HomeFollowPersonLoadingState());
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .collection("following")
+        .doc(userId)
+        .set({"follwing": true}).then((value) {
+      FirebaseFirestore.instance
+          .collection("users")
+          .doc(userId)
+          .collection("followers")
+          .doc(currentUser!.uid)
+          .set({
+        "follow": true,
+      }).then((value) {
+        followingUsers.add(userId);
+        emit(HomeFollowPersonSuccesState());
+      }).catchError((onError) {
+        emit(HomeFollowPersonFailedState());
+      });
+    }).catchError((onError) {
+      emit(HomeFollowPersonFailedState());
+    });
+  }
+
+  Future<void> getFollowingUser() async {
+    emit(HomeGetFollowingUsersLoadingState());
+    followingUsers = [];
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .collection('following')
+        .get()
+        .then((value) {
+      for (var element in value.docs) {
+        followingUsers.add(element.id);
+      }
+      emit(HomeGetFollowingUsersSuccesState());
+    }).catchError((onError) {
+      emit(HomeGetFollowingUsersFailedState());
+    });
+  }
+
+  Future<void> getFollowersUser() async {
+    emit(HomeGetFollowersUsersLoadingState());
+    followersUsers = [];
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .collection('followers')
+        .get()
+        .then((value) {
+      if (value.docs.isEmpty) {
+      } else {
+        for (var element in value.docs) {
+          followersUsers.add(element.id);
+        }
+      }
+
+      emit(HomeGetFollowersUsersSuccesState());
+    }).catchError((onError) {
+      emit(HomeGetFollowersUsersFailedState());
+    });
+  }
+
+  Future<void> unfllowUser({required String userId}) async {
+    emit(HomeUnfollowUserLoadingState());
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("followers")
+        .doc(currentUser!.uid)
+        .get()
+        .then((value) {
+      value.reference.delete();
+      FirebaseFirestore.instance
+          .collection("users")
+          .doc(currentUser!.uid)
+          .collection("following")
+          .doc(userId)
+          .get()
+          .then((value) {
+        value.reference.delete();
+        followingUsers.remove(userId);
+        emit(HomeUnfollowUserSuccesState());
+      }).catchError((onError) {
+        emit(HomeUnfollowUserFailedState());
+      });
+    }).catchError((onError) {
+      emit(HomeUnfollowUserFailedState());
     });
   }
 }

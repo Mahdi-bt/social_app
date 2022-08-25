@@ -53,7 +53,7 @@ class FeedScreen extends StatelessWidget {
                   ),
                   icon: const Icon(
                     Icons.add_circle_rounded,
-                    color: Colors.black45,
+                    color: Colors.blueAccent,
                     size: 30,
                   ),
                 ),

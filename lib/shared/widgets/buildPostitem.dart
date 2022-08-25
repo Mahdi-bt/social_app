@@ -79,6 +79,30 @@ class buildPostItem extends StatelessWidget {
               ],
             ),
             const Spacer(),
+            if (post.posterUid != HomeCubit.get(context).currentUser!.uid)
+              HomeCubit.get(context).followingUsers.contains(post.posterUid)
+                  ? TextButton(
+                      onPressed: () async => await HomeCubit.get(context)
+                          .unfllowUser(userId: post.posterUid),
+                      child: Row(
+                        children: const [
+                          Text('Followed'),
+                          Icon(
+                            Icons.check,
+                            size: 20,
+                            color: Colors.lightBlue,
+                          ),
+                        ],
+                      ),
+                    )
+                  : TextButton(
+                      onPressed: () async => await HomeCubit.get(context)
+                          .followPerson(userId: post.posterUid),
+                      child: Text(
+                        'Follow',
+                        style: Theme.of(context).textTheme.bodyText1,
+                      ),
+                    ),
             IconButton(
               onPressed: () {
                 showModalBottomSheet(
@@ -86,7 +110,12 @@ class buildPostItem extends StatelessWidget {
                   builder: (context) {
                     return BlocProvider.value(
                       value: BlocProvider.of<HomeCubit>(newContext),
-                      child: BlocBuilder<HomeCubit, HomeLayoutStates>(
+                      child: BlocConsumer<HomeCubit, HomeLayoutStates>(
+                        listener: (context, state) {
+                          if (state is HomeDeletePostSuccesState) {
+                            Navigator.pop(context);
+                          }
+                        },
                         builder: (context, state) {
                           return SizedBox(
                             height: post.posterUid ==
@@ -100,12 +129,8 @@ class buildPostItem extends StatelessWidget {
                                       width: width,
                                       context: context,
                                       function: () async {
-                                        await HomeCubit.get(context)
-                                            .deletePost(
-                                                postUid: postUid, index: index)
-                                            .then((value) {
-                                          Navigator.pop(context);
-                                        });
+                                        await HomeCubit.get(context).deletePost(
+                                            postUid: postUid, index: index);
                                       },
                                       height: height,
                                       icon: Icons.delete_forever_rounded,
@@ -266,94 +291,113 @@ class buildPostItem extends StatelessWidget {
                                     vertical: height * .03),
                                 child: Column(
                                   children: [
-                                    Expanded(
-                                      child: ListView.separated(
-                                        itemBuilder: (context, index) {
-                                          return Row(
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                child: CachedNetworkImage(
-                                                  imageUrl: comment![index]
-                                                      .commentUserPic,
-                                                  height: height * .06,
-                                                  maxHeightDiskCache: 75,
-                                                  key: UniqueKey(),
-                                                  placeholder: (context, url) =>
-                                                      Container(
-                                                    color: Colors.black12,
-                                                  ),
-                                                  errorWidget:
-                                                      (context, url, error) =>
-                                                          Container(
-                                                    color: Colors.black12,
-                                                    child: const Icon(
-                                                        Icons.report),
-                                                  ),
-                                                ),
-                                              ),
-                                              SizedBox(
-                                                width: width * .02,
-                                              ),
-                                              Expanded(
-                                                child: Container(
-                                                  padding:
-                                                      const EdgeInsets.all(10),
-                                                  decoration: BoxDecoration(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                    color: HexColor('#EFEFEF'),
-                                                  ),
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        cubit
-                                                            .commentUsers[index]
-                                                            .userName,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .headline6!
-                                                            .copyWith(
-                                                              color:
-                                                                  Colors.black,
+                                    state is HomeCommentPostLoadingState ||
+                                            state
+                                                is HomeGetPostCommentLoadingState
+                                        ? const Center(
+                                            child: CircularProgressIndicator(),
+                                          )
+                                        : Expanded(
+                                            child: ListView.separated(
+                                              itemBuilder: (context, index) {
+                                                return Row(
+                                                  children: [
+                                                    ClipRRect(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                      child: CachedNetworkImage(
+                                                        imageUrl:
+                                                            comment![index]
+                                                                .commentUserPic,
+                                                        height: height * .06,
+                                                        maxHeightDiskCache: 75,
+                                                        key: UniqueKey(),
+                                                        placeholder:
+                                                            (context, url) =>
+                                                                Container(
+                                                          color: Colors.black12,
+                                                        ),
+                                                        errorWidget: (context,
+                                                                url, error) =>
+                                                            Container(
+                                                          color: Colors.black12,
+                                                          child: const Icon(
+                                                              Icons.report),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    SizedBox(
+                                                      width: width * .02,
+                                                    ),
+                                                    Expanded(
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(10),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(20),
+                                                          color: HexColor(
+                                                              '#EFEFEF'),
+                                                        ),
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              cubit
+                                                                  .commentUsers[
+                                                                      index]
+                                                                  .userName,
+                                                              style: Theme.of(
+                                                                      context)
+                                                                  .textTheme
+                                                                  .headline6!
+                                                                  .copyWith(
+                                                                    color: Colors
+                                                                        .black,
+                                                                  ),
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
                                                             ),
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
+                                                            Text(
+                                                              comment[index]
+                                                                  .commentText,
+                                                              style: Theme.of(
+                                                                      context)
+                                                                  .textTheme
+                                                                  .bodyText1,
+                                                            ),
+                                                          ],
+                                                        ),
                                                       ),
-                                                      Text(
-                                                        comment[index]
-                                                            .commentText,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .bodyText1,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              IconButton(
-                                                onPressed: () {},
-                                                icon: const Icon(
-                                                    Icons.more_vert_rounded),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                        separatorBuilder: (context, index) =>
-                                            SizedBox(height: height * .03),
-                                        itemCount:
-                                            cubit.postsComment[postUid]!.length,
-                                        shrinkWrap: true,
-                                        physics: const BouncingScrollPhysics(),
-                                      ),
-                                    ),
+                                                    ),
+                                                    const Spacer(),
+                                                    IconButton(
+                                                      onPressed: () {},
+                                                      icon: const Icon(Icons
+                                                          .more_vert_rounded),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                              separatorBuilder:
+                                                  (context, index) => SizedBox(
+                                                      height: height * .03),
+                                              itemCount: cubit
+                                                  .postsComment[postUid]!
+                                                  .length,
+                                              shrinkWrap: true,
+                                              physics:
+                                                  const BouncingScrollPhysics(),
+                                            ),
+                                          ),
                                     SizedBox(
                                       height: height * .01,
                                     ),

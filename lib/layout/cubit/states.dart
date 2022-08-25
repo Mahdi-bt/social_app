@@ -147,3 +147,31 @@ class HomeDeleteUserNotificationLoadingState extends HomeLayoutStates {}
 class HomeDeleteUserNotificationFailedState extends HomeLayoutStates {}
 
 class HomeDeleteUserNotificationSuccesState extends HomeLayoutStates {}
+
+//states to follow pepole
+class HomeFollowPersonLoadingState extends HomeLayoutStates {}
+
+class HomeFollowPersonSuccesState extends HomeLayoutStates {}
+
+class HomeFollowPersonFailedState extends HomeLayoutStates {}
+
+//states to get Follwing users
+class HomeGetFollowingUsersLoadingState extends HomeLayoutStates {}
+
+class HomeGetFollowingUsersSuccesState extends HomeLayoutStates {}
+
+class HomeGetFollowingUsersFailedState extends HomeLayoutStates {}
+
+//states to get followers users
+class HomeGetFollowersUsersLoadingState extends HomeLayoutStates {}
+
+class HomeGetFollowersUsersSuccesState extends HomeLayoutStates {}
+
+class HomeGetFollowersUsersFailedState extends HomeLayoutStates {}
+
+//states to unfllow person
+class HomeUnfollowUserLoadingState extends HomeLayoutStates {}
+
+class HomeUnfollowUserSuccesState extends HomeLayoutStates {}
+
+class HomeUnfollowUserFailedState extends HomeLayoutStates {}

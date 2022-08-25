@@ -9,10 +9,30 @@ import 'package:social_app/shared/styles/styles.dart';
 
 import '../../layout/cubit/cubit.dart';
 
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
   ChatScreen({Key? key, required this.chatUser}) : super(key: key);
   final UserModel chatUser;
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
   TextEditingController messageController = TextEditingController();
+
+  final ScrollController _scrollController = ScrollController();
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    messageController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     var screenWidth = MediaQuery.of(context).size.width;
@@ -20,19 +40,19 @@ class ChatScreen extends StatelessWidget {
     return Builder(
       builder: (context) {
         var cubit = HomeCubit.get(context);
-        cubit.getMessages(reciverId: chatUser.uid);
+        cubit.getMessages(reciverId: widget.chatUser.uid);
         return Scaffold(
           appBar: AppBar(
             title: Row(children: [
               CircleAvatar(
                 backgroundImage:
-                    CachedNetworkImageProvider(chatUser.profilePic),
+                    CachedNetworkImageProvider(widget.chatUser.profilePic),
               ),
               SizedBox(
                 width: screenWidth * .02,
               ),
               Text(
-                chatUser.userName,
+                widget.chatUser.userName,
                 style: Theme.of(context)
                     .textTheme
                     .headline5!
@@ -52,6 +72,7 @@ class ChatScreen extends StatelessWidget {
                 child: Column(children: [
                   Expanded(
                     child: ListView.separated(
+                        controller: _scrollController,
                         itemBuilder: (context, index) {
                           var message = cubit.chats[index];
                           if (message.senderId == cubit.currentUser!.uid) {
@@ -127,8 +148,15 @@ class ChatScreen extends StatelessWidget {
                                 child: MaterialButton(
                                   onPressed: () {
                                     HomeCubit.get(context).sendMessage(
-                                        reciverId: chatUser.uid,
+                                        reciverId: widget.chatUser.uid,
                                         messageText: messageController.text);
+                                    _scrollController.animateTo(
+                                      _scrollController
+                                          .position.maxScrollExtent,
+                                      curve: Curves.easeOut,
+                                      duration:
+                                          const Duration(milliseconds: 500),
+                                    );
                                     messageController.clear();
                                   },
                                   minWidth: 1.0,
