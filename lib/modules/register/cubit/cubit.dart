@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_app/models/userModel.dart';
 import 'package:social_app/modules/register/cubit/states.dart';
 import 'package:social_app/modules/register/register_screen.dart';
+import 'package:social_app/shared/constant.dart';
 
 class RegisterCubit extends Cubit<RegisterStates> {
   RegisterCubit() : super(RegisterInitialStates());
@@ -47,6 +48,7 @@ class RegisterCubit extends Cubit<RegisterStates> {
       uid: uid,
       userName: userName,
       gender: userGender!.name,
+      fcmToken: fcmToken,
     );
     FirebaseFirestore.instance
         .collection("users")

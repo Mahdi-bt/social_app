@@ -117,6 +117,7 @@ class _UpdateUserCredentialState extends State<UpdateUserCredential> {
                                     ? CachedNetworkImage(
                                         imageUrl: cubit.currentUser!.coverPic,
                                         height: height * .3,
+                                        width: width,
                                         maxHeightDiskCache: 200,
                                         fit: BoxFit.cover,
                                         key: UniqueKey(),

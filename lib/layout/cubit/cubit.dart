@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
-
+import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -19,6 +21,7 @@ import 'package:social_app/modules/feed/feed_screen.dart';
 import 'package:social_app/modules/notifications/notification.dart';
 import 'package:social_app/modules/settings/settings_screen.dart';
 import 'package:social_app/shared/components.dart';
+import 'package:social_app/shared/constant.dart';
 import 'package:social_app/shared/local/CacheHelper.dart';
 
 import '../../modules/settings/update_user_info_screen.dart';
@@ -57,6 +60,8 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
       getMyPosts();
       getFollowersUser();
       getFollowingUser();
+
+      getBookMarkedPosts();
     }
     if (index == 1) {
       getUsers();
@@ -100,6 +105,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
       currentUser = UserModel.fromJson(value.data()!);
       getFollowingUser();
       getFollowersUser();
+      getBookMarkedPosts();
       emit(HomeGetUserDataSuccesState());
       print(value.data());
     }).catchError((onError) {
@@ -143,16 +149,32 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     }).catchError((onError) {});
   }
 
-  createPost({required String text, String imageUrl = ""}) async {
+  createPostWithPdfFile({required String text}) async {
+    emit(HomeUploadPostLoadingStates());
+    FirebaseStorage.instance
+        .ref("posts_pdf/${pdfFile!.path.split('/').last}")
+        .putData(pdfFile!.readAsBytesSync())
+        .then((p0) {
+      p0.ref.getDownloadURL().then((value) {
+        createPost(text: text, pdfUrl: value);
+      });
+    }).catchError((onError) {});
+  }
+
+  createPost(
+      {required String text, String imageUrl = "", String pdfUrl = ""}) async {
     DateTime now = DateTime.now();
     String formattedDate = DateFormat('kk:mm EEE d MMM').format(now);
     PostModel postModel = PostModel(
-        mediaUrl: imageUrl,
-        postTime: formattedDate,
-        postTitle: text,
-        posterName: currentUser!.userName,
-        posterUid: currentUser!.uid,
-        posterPhotoUrl: currentUser!.profilePic);
+      mediaUrl: imageUrl,
+      postTime: formattedDate,
+      postTitle: text,
+      posterName: currentUser!.userName,
+      posterUid: currentUser!.uid,
+      posterPhotoUrl: currentUser!.profilePic,
+      pdfUrl: pdfUrl,
+    );
+
     FirebaseFirestore.instance
         .collection("posts")
         .add(postModel.toMap())
@@ -188,9 +210,10 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
   Map<String, List<CommentModel>> postsComment = {};
   List<String> userLikesUid = [];
   List<CommentModel> usersComment = [];
+  List<String> usersUid = [];
   Future<void> getPosts() async {
     emit(HomeGetPostLoadingState());
-
+    usersUid = [];
     posts = [];
     postsUid = [];
     postsLikes = {};
@@ -206,11 +229,14 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
             if (followingUsers.contains(element.data()['posterUid'])) {
               if (element.data()['postLikes'] != 0) {
                 await element.reference.collection("likes").get().then((value) {
-                  userLikesUid = [];
+                  usersUid = [];
                   for (var likesElment in value.docs) {
-                    userLikesUid.add(likesElment.id);
+                    if (likesElment.id == currentUser!.uid) {
+                      userLikesUid.add(element.id);
+                    }
+                    usersUid.add(likesElment.id);
                   }
-                  postsLikes[element.id] = userLikesUid;
+                  postsLikes[element.id] = usersUid;
                   // print(postsLikes[element.id]);
                 });
               } else {
@@ -246,11 +272,14 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
           for (var element in value.docs) {
             if (element.data()['postLikes'] != 0) {
               await element.reference.collection("likes").get().then((value) {
-                userLikesUid = [];
+                usersUid = [];
                 for (var likesElment in value.docs) {
-                  userLikesUid.add(likesElment.id);
+                  if (likesElment.id == currentUser!.uid) {
+                    userLikesUid.add(element.id);
+                  }
+                  usersUid.add(likesElment.id);
                 }
-                postsLikes[element.id] = userLikesUid;
+                postsLikes[element.id] = usersUid;
                 // print(postsLikes[element.id]);
               });
             } else {
@@ -288,20 +317,31 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     });
   }
 
-  likePost({required String postId}) async {
+  Future<String> getTokenFcmByUid({required String userUid}) async {
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(userUid)
+        .get()
+        .then((value) {
+      return value.data()!['fcmToken'].toString();
+    }).catchError((onError) {});
+    return "";
+  }
+
+  Future<void> likePost({required String postId}) async {
     emit(HomeLikePostLoadingState());
     String reciver = "";
-    await FirebaseFirestore.instance
+    FirebaseFirestore.instance
         .collection("posts")
         .doc(postId)
         .collection("likes")
         .doc(currentUser!.uid)
-        .set({"like": true}).then((value) {
+        .set({"like": true}).then((value) async {
       FirebaseFirestore.instance
           .collection("posts")
           .doc(postId)
           .get()
-          .then((value) {
+          .then((value) async {
         PostModel model = PostModel.fromJson(value.data()!);
         model.postLikes++;
         reciver = model.posterUid;
@@ -309,18 +349,28 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
             .collection("posts")
             .doc(postId)
             .set(model.toMap());
-      }).then((value) {
+      }).then((value) async {
         postsLikes[postId]!.add(currentUser!.uid);
+
+        userLikesUid.add(postId);
+
         if (reciver == currentUser!.uid) {
           emit(HomeLikePostSuccesState());
         } else {
-          sendNotification(
-              reciverUserUid: reciver,
-              senderUserUid: currentUser!.uid,
-              notificationType: NotificationType.postLike,
-              postUid: postId,
-              userName: currentUser!.userName);
-          emit(HomeLikePostSuccesState());
+          FirebaseFirestore.instance
+              .collection("users")
+              .doc(reciver)
+              .get()
+              .then((value) {
+            sendNotification(
+                reciverUserUid: reciver,
+                senderUserUid: currentUser!.uid,
+                notificationType: NotificationType.postLike,
+                reciverUserTokenFcm: value.data()!['fcmToken'],
+                postUid: postId,
+                userName: currentUser!.userName);
+            emit(HomeLikePostSuccesState());
+          });
         }
       });
     }).catchError((onError) {
@@ -328,7 +378,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     });
   }
 
-  removeLike({required String postUid}) {
+  Future<void> removeLike({required String postUid}) async {
     emit(HomeDeleteLikePostLoadingState());
     FirebaseFirestore.instance
         .collection("posts")
@@ -337,6 +387,7 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         .doc(currentUser!.uid)
         .delete()
         .then((value) {
+      userLikesUid.remove(postUid);
       FirebaseFirestore.instance
           .collection("posts")
           .doc(postUid)
@@ -374,7 +425,11 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     emit(HomeGetPostCommentSuccesState());
   }
 
-  commentPost({required String postUid, required String commentText}) async {
+  commentPost({
+    required String postUid,
+    required String commentText,
+    required String posterUid,
+  }) async {
     emit(HomeCommentPostLoadingState());
     String reciver = "";
     CommentModel comment = CommentModel(
@@ -406,15 +461,22 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
 
         if (reciver == currentUser!.uid) {
         } else {
-          sendNotification(
-            reciverUserUid: reciver,
-            senderUserUid: currentUser!.uid,
-            notificationType: NotificationType.postComment,
-            postUid: postUid,
-            userName: currentUser!.userName,
-          );
+          FirebaseFirestore.instance
+              .collection("users")
+              .doc(posterUid)
+              .get()
+              .then((value) {
+            sendNotification(
+              reciverUserUid: reciver,
+              senderUserUid: currentUser!.uid,
+              notificationType: NotificationType.postComment,
+              postUid: postUid,
+              userName: currentUser!.userName,
+              reciverUserTokenFcm: value.data()!['fcmToken'],
+            );
+          });
         }
-        getUsersCommentList(Uid: postUid);
+
         emit(HomeCommentPostSuccesState());
       }).catchError((onError) {
         emit(HomeCommentPostFailedState());
@@ -427,6 +489,8 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
   void sendMessage({
     required String reciverId,
     required String messageText,
+    required String reciverFcmToken,
+    required String senderName,
   }) {
     emit(HomeSendMessageLoadingState());
 
@@ -462,7 +526,14 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
                 .add(chat.toMap())
                 .then((value) {
                   deleteMessageImage();
-                  emit(HomeSendMessageSuccesState());
+                  sendPushNotification(
+                          token: reciverFcmToken,
+                          body: messageText,
+                          title: senderName,
+                          imageUrl: chat.imageUrl)
+                      .then((value) {
+                    emit(HomeSendMessageSuccesState());
+                  });
                 })
                 .catchError((onError) {})
                 .catchError((onError) {
@@ -499,7 +570,13 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
             .collection("messages")
             .add(chat.toMap())
             .then((value) {
-              emit(HomeSendMessageSuccesState());
+              sendPushNotification(
+                token: reciverFcmToken,
+                body: messageText,
+                title: senderName,
+              ).then((value) {
+                emit(HomeSendMessageSuccesState());
+              });
             })
             .catchError((onError) {})
             .catchError((onError) {
@@ -544,6 +621,18 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     } else {
       debugPrint('No image selected.');
       emit(HomePickMessageImageFailedState());
+    }
+  }
+
+  File? pdfFile;
+  pickPdfFile() async {
+    FilePickerResult? result =
+        await FilePicker.platform.pickFiles(allowMultiple: false);
+    if (result != null) {
+      pdfFile = File(result.files.single.path.toString());
+      emit(HomePickPdfFileSuccesStates());
+    } else {
+      emit(HomePickPdfFileFailedStates());
     }
   }
 
@@ -751,10 +840,48 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
     });
   }
 
+  Future<void> sendPushNotification({
+    required String token,
+    required String body,
+    required String title,
+    String? imageUrl,
+    Map<String, dynamic>? data,
+  }) async {
+    await http.post(
+      Uri.parse('https://fcm.googleapis.com/fcm/send'),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization':
+            'key=AAAAphQ1Ayc:APA91bF6fiYYap88_CO0K-YW4TG_2OXCQJhEMKBNy9ADoZ3eptL070LzX1RoaUmBdeH4b0mjeLhDPClcp5HJwaf8cIiaIQoNBuNPg_0Fp2SetEutqdC9oUBgGYAJ7Rse6Q5SKJyVKYzN',
+      },
+      body: jsonEncode({
+        "to": token,
+        "notification": {
+          "title": title,
+          "body": body,
+          "image": imageUrl,
+          "sound": "default"
+        },
+        "android": {
+          "priority": "HIGH",
+          "notification": {
+            "notification_priority": "PRIORITY_MAX",
+            "sound": "default",
+            "default_sound": true,
+            "default_vibrate_timings": true,
+            "default_light_settings": true
+          }
+        },
+        "data": data,
+      }),
+    );
+  }
+
   Future<void> sendNotification({
     required String reciverUserUid,
     required String senderUserUid,
     required NotificationType notificationType,
+    String? reciverUserTokenFcm,
     required String userName,
     String? postUid,
   }) async {
@@ -774,7 +901,21 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
             .collection("notification")
             .add(notificationModel.toMap())
             .then((value) {
-          emit(HomeSendNotificationSuccesState());
+          if (reciverUserTokenFcm != null) {
+            sendPushNotification(
+              token: reciverUserTokenFcm,
+              body: "$userName Like Your Post",
+              title: 'Post Like',
+              data: {
+                "click_action": "FLUTTER_NOTIFICATION_CLICK",
+                "postUid": postUid,
+              },
+            ).then((value) {
+              emit(HomeSendNotificationSuccesState());
+            });
+          } else {
+            emit(HomeSendNotificationSuccesState());
+          }
         }).catchError((onError) {
           emit(HomeSendNotificationFailedState());
         });
@@ -786,7 +927,21 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
             .collection("notification")
             .add(notificationModel.toMap())
             .then((value) {
-          emit(HomeSendNotificationSuccesState());
+          if (reciverUserTokenFcm != null) {
+            sendPushNotification(
+              token: reciverUserTokenFcm,
+              body: "$userName Comment Your Post",
+              title: 'Post Comment ',
+              data: {
+                "click_action": "FLUTTER_NOTIFICATION_CLICK",
+                "postUid": postUid,
+              },
+            ).then((value) {
+              emit(HomeSendNotificationSuccesState());
+            });
+          } else {
+            emit(HomeSendNotificationSuccesState());
+          }
         }).catchError((onError) {
           emit(HomeSendNotificationFailedState());
         });
@@ -811,7 +966,21 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
             .collection("notification")
             .add(notificationModel.toMap())
             .then((value) {
-          emit(HomeSendNotificationSuccesState());
+          if (reciverUserTokenFcm != null) {
+            sendPushNotification(
+              token: reciverUserTokenFcm,
+              body: "$userName Start Follwing you ",
+              title: 'New Follower ',
+              data: {
+                "click_action": "FLUTTER_NOTIFICATION_CLICK",
+                "userId": reciverUserUid
+              },
+            ).then((value) {
+              emit(HomeSendNotificationSuccesState());
+            });
+          } else {
+            emit(HomeSendNotificationSuccesState());
+          }
         }).catchError((onError) {
           emit(HomeSendNotificationFailedState());
         });
@@ -874,13 +1043,20 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
         "follow": true,
       }).then((value) {
         followingUsers.add(userId);
-        sendNotification(
-          reciverUserUid: userId,
-          senderUserUid: currentUser!.uid,
-          notificationType: NotificationType.followUser,
-          userName: currentUser!.userName,
-        );
-        emit(HomeFollowPersonSuccesState());
+        FirebaseFirestore.instance
+            .collection("users")
+            .doc(userId)
+            .get()
+            .then((value) {
+          sendNotification(
+            reciverUserUid: userId,
+            senderUserUid: currentUser!.uid,
+            notificationType: NotificationType.followUser,
+            userName: currentUser!.userName,
+            reciverUserTokenFcm: value.data()!['fcmToken'],
+          );
+          emit(HomeFollowPersonSuccesState());
+        });
       }).catchError((onError) {
         emit(HomeFollowPersonFailedState());
       });
@@ -955,6 +1131,68 @@ class HomeCubit extends Cubit<HomeLayoutStates> {
       });
     }).catchError((onError) {
       emit(HomeUnfollowUserFailedState());
+    });
+  }
+
+  List<String> savedPostUid = [];
+  Future<void> bookMarkPost({required String postUid}) async {
+    emit(HomeBookMarkPostLoadingState());
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .collection("savedPosts")
+        .doc(postUid)
+        .set({"Saved": true}).then((value) {
+      savedPostUid.add(postUid);
+      emit(HomeBookMarkPostSucesState());
+    }).catchError((onError) {
+      emit(HomeBookMarkPostFailedState());
+    });
+  }
+
+  Map<String, PostModel> savedPost = {};
+
+  Future<void> getBookMarkedPosts() async {
+    emit(HomeGetBookMarkedPostsLoadingState());
+    savedPost = {};
+    savedPostUid = [];
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .collection("savedPosts")
+        .get()
+        .then((value) {
+      for (var element in value.docs) {
+        savedPostUid.add(element.id);
+        FirebaseFirestore.instance
+            .collection("posts")
+            .doc(element.id)
+            .get()
+            .then((value) {
+          savedPost[value.id] = PostModel.fromJson(value.data()!);
+        });
+      }
+      emit(HomeGetBookMarkedPostsSuccesState());
+    }).catchError((onError) {
+      emit(HomeGetBookMarkedPostsFailedState());
+    });
+  }
+
+  Future<void> removeBookMarkedPost({required String postUid}) async {
+    emit(HomeRemoveBookmarkedPostLoadingState());
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUser!.uid)
+        .collection("savedPosts")
+        .doc(postUid)
+        .get()
+        .then((value) {
+      savedPostUid.remove(postUid);
+      value.reference.delete();
+      savedPost.removeWhere((key, value) => key == postUid);
+      emit(HomeRemoveBookmarkedPostSuccesState());
+    }).catchError((onError) {
+      emit(HomeRemoveBookmarkedPostFailedState());
     });
   }
 }

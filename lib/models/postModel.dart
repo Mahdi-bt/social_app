@@ -5,20 +5,21 @@ class PostModel {
   late String posterUid;
   late String posterPhotoUrl;
   late String posterName;
-
+  String pdfUrl = "";
   int postComment = 0;
   int postLikes = 0;
 
-  PostModel(
-      {required this.mediaUrl,
-      this.postComment = 0,
-      this.postLikes = 0,
-      required this.postTime,
-      required this.postTitle,
-      required this.posterName,
-      required this.posterUid,
-      required this.posterPhotoUrl,
-      r});
+  PostModel({
+    required this.mediaUrl,
+    this.postComment = 0,
+    this.postLikes = 0,
+    this.pdfUrl = "",
+    required this.postTime,
+    required this.postTitle,
+    required this.posterName,
+    required this.posterUid,
+    required this.posterPhotoUrl,
+  });
 
   PostModel.fromJson(Map<String, dynamic> json) {
     postTitle = json['postTitle'];
@@ -29,6 +30,7 @@ class PostModel {
     posterName = json['posterName'];
     postComment = json['postComment'];
     postLikes = json['postLikes'];
+    pdfUrl = json['pdfUrl'];
   }
 
   Map<String, dynamic> toMap() {
@@ -41,6 +43,7 @@ class PostModel {
       "posterName": posterName,
       "postComment": postComment,
       "postLikes": postLikes,
+      "pdfUrl": pdfUrl,
     };
   }
 }

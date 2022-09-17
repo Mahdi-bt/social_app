@@ -149,6 +149,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                   onPressed: () {
                                     HomeCubit.get(context).sendMessage(
                                         reciverId: widget.chatUser.uid,
+                                        senderName: widget.chatUser.userName,
+                                        reciverFcmToken:
+                                            widget.chatUser.fcmToken,
                                         messageText: messageController.text);
                                     _scrollController.animateTo(
                                       _scrollController

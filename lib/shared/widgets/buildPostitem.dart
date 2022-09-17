@@ -2,19 +2,20 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:social_app/layout/cubit/cubit.dart';
 import 'package:social_app/layout/cubit/states.dart';
 import 'package:social_app/models/commentModel.dart';
 import 'package:social_app/models/postModel.dart';
-import 'package:social_app/models/userModel.dart';
+import 'package:social_app/modules/pdfViewr/pdf_view.dart';
 import 'package:social_app/modules/settings/update_posts.dart';
 import 'package:social_app/shared/styles/icon_broken.dart';
 import 'package:social_app/shared/widgets/widgets.dart';
 
 import '../styles/styles.dart';
 
-class buildPostItem extends StatelessWidget {
-  buildPostItem({
+class buildPostItem extends StatefulWidget {
+  const buildPostItem({
     Key? key,
     required this.width,
     required this.height,
@@ -29,26 +30,72 @@ class buildPostItem extends StatelessWidget {
   final String postUid;
   final int index;
   final BuildContext newContext;
+
+  @override
+  State<buildPostItem> createState() => _buildPostItemState();
+}
+
+class _buildPostItemState extends State<buildPostItem>
+    with TickerProviderStateMixin {
   TextEditingController myController = TextEditingController();
+
+  late AnimationController bookMarkController;
+  late AnimationController heartController;
+  @override
+  void initState() {
+    super.initState();
+    bookMarkController = AnimationController(
+      vsync: this,
+      duration: const Duration(
+        seconds: 2,
+      ),
+      value: HomeCubit.get(context).savedPostUid.contains(widget.postUid)
+          ? 1.0
+          : 0.0,
+    );
+    heartController = AnimationController(
+      vsync: this,
+      duration: const Duration(
+        seconds: 2,
+      ),
+      value: HomeCubit.get(context).userLikesUid.contains(widget.postUid)
+          ? 1.0
+          : 0.0,
+    );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    bookMarkController.dispose();
+    heartController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+              blurRadius: 5,
+              color: Colors.grey.shade400,
+              offset: const Offset(0, 3))
+        ],
         borderRadius: BorderRadius.circular(
           20,
         ),
         color: HexColor('#EFF3F5'),
       ),
-      padding:
-          EdgeInsets.symmetric(horizontal: width * .02, vertical: height * .02),
+      padding: EdgeInsets.symmetric(
+          horizontal: widget.width * .02, vertical: widget.height * .02),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: CachedNetworkImage(
-                imageUrl: post.posterPhotoUrl,
-                height: height * .06,
+                imageUrl: widget.post.posterPhotoUrl,
+                height: widget.height * .06,
                 maxHeightDiskCache: 75,
                 key: UniqueKey(),
                 placeholder: (context, url) => Container(
@@ -61,29 +108,32 @@ class buildPostItem extends StatelessWidget {
               ),
             ),
             SizedBox(
-              width: width * .02,
+              width: widget.width * .02,
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  post.posterName,
+                  widget.post.posterName,
                   style: Theme.of(context).textTheme.headline6!.copyWith(
                         color: Colors.black,
                       ),
                 ),
                 Text(
-                  post.postTime,
+                  widget.post.postTime,
                   style: Theme.of(context).textTheme.bodyText1,
                 ),
               ],
             ),
             const Spacer(),
-            if (post.posterUid != HomeCubit.get(context).currentUser!.uid)
-              HomeCubit.get(context).followingUsers.contains(post.posterUid)
+            if (widget.post.posterUid !=
+                HomeCubit.get(context).currentUser!.uid)
+              HomeCubit.get(context)
+                      .followingUsers
+                      .contains(widget.post.posterUid)
                   ? TextButton(
                       onPressed: () async => await HomeCubit.get(context)
-                          .unfllowUser(userId: post.posterUid),
+                          .unfllowUser(userId: widget.post.posterUid),
                       child: Row(
                         children: const [
                           Text('Followed'),
@@ -97,7 +147,7 @@ class buildPostItem extends StatelessWidget {
                     )
                   : TextButton(
                       onPressed: () async => await HomeCubit.get(context)
-                          .followPerson(userId: post.posterUid),
+                          .followPerson(userId: widget.post.posterUid),
                       child: Text(
                         'Follow',
                         style: Theme.of(context).textTheme.bodyText1,
@@ -109,7 +159,7 @@ class buildPostItem extends StatelessWidget {
                   context: context,
                   builder: (context) {
                     return BlocProvider.value(
-                      value: BlocProvider.of<HomeCubit>(newContext),
+                      value: BlocProvider.of<HomeCubit>(widget.newContext),
                       child: BlocConsumer<HomeCubit, HomeLayoutStates>(
                         listener: (context, state) {
                           if (state is HomeDeletePostSuccesState) {
@@ -118,27 +168,34 @@ class buildPostItem extends StatelessWidget {
                         },
                         builder: (context, state) {
                           return SizedBox(
-                            height: post.posterUid ==
-                                    HomeCubit.get(newContext).currentUser!.uid
-                                ? height * .18
-                                : height * .1,
+                            height: widget.post.posterUid ==
+                                    HomeCubit.get(widget.newContext)
+                                        .currentUser!
+                                        .uid
+                                ? widget.height * .18
+                                : widget.height * .1,
                             child: Column(children: [
-                              post.posterUid ==
-                                      HomeCubit.get(newContext).currentUser!.uid
+                              widget.post.posterUid ==
+                                      HomeCubit.get(widget.newContext)
+                                          .currentUser!
+                                          .uid
                                   ? buildEditPostItem(
-                                      width: width,
+                                      width: widget.width,
                                       context: context,
                                       function: () async {
                                         await HomeCubit.get(context).deletePost(
-                                            postUid: postUid, index: index);
+                                            postUid: widget.postUid,
+                                            index: widget.index);
                                       },
-                                      height: height,
+                                      height: widget.height,
                                       icon: Icons.delete_forever_rounded,
                                       text: 'Delete This Post',
                                       color: Colors.red)
                                   : const SizedBox(),
-                              post.posterUid ==
-                                      HomeCubit.get(newContext).currentUser!.uid
+                              widget.post.posterUid ==
+                                      HomeCubit.get(widget.newContext)
+                                          .currentUser!
+                                          .uid
                                   ? buildEditPostItem(
                                       function: () {
                                         Navigator.pop(context);
@@ -151,8 +208,8 @@ class buildPostItem extends StatelessWidget {
                                                     BlocProvider.of<HomeCubit>(
                                                         context),
                                                 child: UpdatePostScreen(
-                                                  post: post,
-                                                  postId: postUid,
+                                                  post: widget.post,
+                                                  postId: widget.postUid,
                                                 ),
                                               );
                                             },
@@ -160,20 +217,22 @@ class buildPostItem extends StatelessWidget {
                                         );
                                       },
                                       context: context,
-                                      width: width,
-                                      height: height,
+                                      width: widget.width,
+                                      height: widget.height,
                                       icon: Icons.edit,
                                       text: 'Update This Post',
                                       color: Colors.blue,
                                     )
                                   : const SizedBox(),
-                              post.posterUid !=
-                                      HomeCubit.get(newContext).currentUser!.uid
+                              widget.post.posterUid !=
+                                      HomeCubit.get(widget.newContext)
+                                          .currentUser!
+                                          .uid
                                   ? buildEditPostItem(
                                       function: () {},
                                       context: context,
-                                      width: width,
-                                      height: height,
+                                      width: widget.width,
+                                      height: widget.height,
                                       icon: Icons.report,
                                       text: 'Report This Post',
                                       color: Colors.grey,
@@ -192,16 +251,17 @@ class buildPostItem extends StatelessWidget {
           ],
         ),
         SizedBox(
-          height: height * .02,
+          height: widget.height * .02,
         ),
-        post.mediaUrl != ""
+        widget.post.mediaUrl != ""
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(
                   14,
                 ),
                 child: CachedNetworkImage(
-                  imageUrl: post.mediaUrl,
-                  height: height * .3,
+                  imageUrl: widget.post.mediaUrl,
+                  height: widget.height * .3,
+                  width: widget.width,
                   maxHeightDiskCache: 200,
                   fit: BoxFit.cover,
                   key: UniqueKey(),
@@ -215,26 +275,69 @@ class buildPostItem extends StatelessWidget {
                 ),
               )
             : const SizedBox(),
-        SizedBox(height: height * .005),
+        widget.post.pdfUrl != ""
+            ? InkWell(
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PdfView(url: widget.post.pdfUrl),
+                    )),
+                child: Container(
+                  height: widget.height * .09,
+                  width: widget.width,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      color: HexColor('#CED6DC'),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.grey.shade400,
+                            blurRadius: 7,
+                            offset: const Offset(0, 5))
+                      ]),
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Image.asset(
+                          'assets/images/file.png',
+                          height: widget.height * .07,
+                        ),
+                        Text(
+                          'Pdf File Tap to Preview it',
+                          style: Theme.of(context).textTheme.headline6,
+                        ),
+                      ]),
+                ),
+              )
+            : const SizedBox(),
+        SizedBox(height: widget.height * .005),
         Row(
           children: [
             BlocBuilder<HomeCubit, HomeLayoutStates>(
               builder: (context, state) {
-                var cubit = HomeCubit.get(context);
-                return IconButton(
-                  icon: Icon(
-                    IconBroken.Heart,
-                    size: 28,
-                    color: cubit.postsLikes[postUid]!
-                            .contains(cubit.currentUser!.uid)
-                        ? Colors.red
-                        : Colors.grey,
-                  ),
-                  onPressed: () {
-                    cubit.postsLikes[postUid]!.contains(cubit.currentUser!.uid)
-                        ? cubit.removeLike(postUid: postUid)
-                        : HomeCubit.get(context).likePost(postId: postUid);
+                return GestureDetector(
+                  onTap: () {
+                    if (!HomeCubit.get(context)
+                        .userLikesUid
+                        .contains(widget.postUid)) {
+                      HomeCubit.get(context)
+                          .likePost(postId: widget.postUid)
+                          .then((value) {
+                        heartController.forward();
+                      });
+                    } else {
+                      HomeCubit.get(context)
+                          .removeLike(postUid: widget.postUid)
+                          .then((value) {
+                        heartController.reverse();
+                      });
+                    }
                   },
+                  child: Lottie.asset(
+                    'assets/images/heart_animation.json',
+                    width: widget.width * .08,
+                    height: widget.height * .09,
+                    controller: heartController,
+                  ),
                 );
               },
             ),
@@ -242,18 +345,18 @@ class buildPostItem extends StatelessWidget {
               builder: (context, state) {
                 var cubit = HomeCubit.get(context);
                 return Text(
-                  HomeCubit.get(context).postsLikes[postUid]!.isEmpty
+                  HomeCubit.get(context).postsLikes[widget.postUid]!.isEmpty
                       ? "0"
                       : HomeCubit.get(context)
-                          .postsLikes[postUid]!
+                          .postsLikes[widget.postUid]!
                           .length
                           .toString(),
-                  style: cubit.postsLikes[postUid]!
+                  style: cubit.postsLikes[widget.postUid]!
                           .contains(cubit.currentUser!.uid)
                       ? Theme.of(context)
                           .textTheme
                           .subtitle1!
-                          .copyWith(color: Colors.blueAccent)
+                          .copyWith(color: Colors.blueAccent, fontSize: 20)
                       : Theme.of(context).textTheme.subtitle1,
                 );
               },
@@ -262,13 +365,14 @@ class buildPostItem extends StatelessWidget {
               builder: (context, state) {
                 return IconButton(
                   padding: const EdgeInsets.all(0),
-                  icon: const Icon(
+                  icon: Icon(
                     IconBroken.Message,
+                    color: Colors.grey.shade500,
                     size: 28,
                   ),
                   onPressed: () async {
                     await HomeCubit.get(context)
-                        .getUsersCommentList(Uid: postUid)
+                        .getUsersCommentList(Uid: widget.postUid)
                         .then((value) {});
                     showModalBottomSheet(
                       context: context,
@@ -281,29 +385,25 @@ class buildPostItem extends StatelessWidget {
                       useRootNavigator: true,
                       builder: (context) {
                         return BlocProvider.value(
-                          value: BlocProvider.of<HomeCubit>(newContext),
+                          value: BlocProvider.of<HomeCubit>(widget.newContext),
                           child: BlocBuilder<HomeCubit, HomeLayoutStates>(
                             builder: (context, state) {
                               var cubit = HomeCubit.get(context);
-                              List<CommentModel>? comment =
-                                  cubit.postsComment[postUid];
+                              List<CommentModel> comment =
+                                  cubit.postsComment[widget.postUid]!;
 
                               return Container(
-                                height: height * .9,
-                                width: width,
+                                height: widget.height * .9,
+                                width: widget.width,
                                 padding: EdgeInsets.symmetric(
-                                    horizontal: width * .01,
-                                    vertical: height * .03),
+                                    horizontal: widget.width * .01,
+                                    vertical: widget.height * .03),
                                 child: Column(
                                   children: [
-                                    state is HomeCommentPostLoadingState ||
-                                            state
-                                                is HomeGetPostCommentLoadingState
-                                        ? const Center(
-                                            child: CircularProgressIndicator(),
-                                          )
-                                        : Expanded(
-                                            child: ListView.separated(
+                                    Expanded(
+                                      child: comment.isEmpty
+                                          ? const Text('No Comment yet')
+                                          : ListView.separated(
                                               itemBuilder: (context, index) {
                                                 return Row(
                                                   children: [
@@ -312,10 +412,10 @@ class buildPostItem extends StatelessWidget {
                                                           BorderRadius.circular(
                                                               8),
                                                       child: CachedNetworkImage(
-                                                        imageUrl:
-                                                            comment![index]
-                                                                .commentUserPic,
-                                                        height: height * .06,
+                                                        imageUrl: comment[index]
+                                                            .commentUserPic,
+                                                        height:
+                                                            widget.height * .06,
                                                         maxHeightDiskCache: 75,
                                                         key: UniqueKey(),
                                                         placeholder:
@@ -333,7 +433,7 @@ class buildPostItem extends StatelessWidget {
                                                       ),
                                                     ),
                                                     SizedBox(
-                                                      width: width * .02,
+                                                      width: widget.width * .02,
                                                     ),
                                                     Expanded(
                                                       child: Container(
@@ -394,17 +494,18 @@ class buildPostItem extends StatelessWidget {
                                               },
                                               separatorBuilder:
                                                   (context, index) => SizedBox(
-                                                      height: height * .03),
+                                                      height:
+                                                          widget.height * .03),
                                               itemCount: cubit
-                                                  .postsComment[postUid]!
+                                                  .postsComment[widget.postUid]!
                                                   .length,
                                               shrinkWrap: true,
                                               physics:
                                                   const BouncingScrollPhysics(),
                                             ),
-                                          ),
+                                    ),
                                     SizedBox(
-                                      height: height * .01,
+                                      height: widget.height * .01,
                                     ),
                                     Padding(
                                       padding: EdgeInsets.only(
@@ -426,7 +527,7 @@ class buildPostItem extends StatelessWidget {
                                             ),
                                           ),
                                           SizedBox(
-                                            width: width * 0.015,
+                                            width: widget.width * 0.015,
                                           ),
                                           Container(
                                             decoration: const BoxDecoration(
@@ -435,7 +536,9 @@ class buildPostItem extends StatelessWidget {
                                             child: IconButton(
                                               onPressed: () async {
                                                 await cubit.commentPost(
-                                                    postUid: postUid,
+                                                    postUid: widget.postUid,
+                                                    posterUid:
+                                                        widget.post.posterUid,
                                                     commentText:
                                                         myController.text);
                                                 myController.clear();
@@ -464,23 +567,37 @@ class buildPostItem extends StatelessWidget {
             IconButton(
               icon: const Icon(
                 IconBroken.Send,
+                color: Colors.lightBlue,
                 size: 28,
               ),
               onPressed: () {},
             ),
             const Spacer(),
-            IconButton(
-              onPressed: () {},
-              icon: SvgPicture.asset(
-                'assets/images/bookmark-solid.svg',
-                height: 26,
-                color: Colors.black45,
-              ),
+            GestureDetector(
+              onTap: () {
+                if (!HomeCubit.get(context)
+                    .savedPostUid
+                    .contains(widget.postUid)) {
+                  HomeCubit.get(context)
+                      .bookMarkPost(postUid: widget.postUid)
+                      .then((value) {
+                    bookMarkController.forward();
+                  });
+                } else {
+                  HomeCubit.get(context)
+                      .removeBookMarkedPost(postUid: widget.postUid)
+                      .then((value) {
+                    bookMarkController.reverse();
+                  });
+                }
+              },
+              child: Lottie.asset('assets/images/772-bookmark-animation.json',
+                  height: 55, controller: bookMarkController, reverse: false),
             )
           ],
         ),
         Text(
-          post.postTitle,
+          widget.post.postTitle,
           style: Theme.of(context).textTheme.caption!.copyWith(
                 overflow: TextOverflow.ellipsis,
                 fontSize: 16,
@@ -488,10 +605,10 @@ class buildPostItem extends StatelessWidget {
           maxLines: 2,
         ),
         SizedBox(
-          height: height * .01,
+          height: widget.height * .01,
         ),
         Container(
-          height: height * .001,
+          height: widget.height * .001,
           width: double.infinity,
           color: Colors.grey[300],
         ),
@@ -504,10 +621,10 @@ class buildPostItem extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               SizedBox(
-                width: width * .01,
+                width: widget.width * .01,
               ),
               Text(
-                post.postComment.toString(),
+                widget.post.postComment.toString(),
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge!

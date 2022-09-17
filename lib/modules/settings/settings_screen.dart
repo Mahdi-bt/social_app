@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_app/layout/cubit/cubit.dart';
 import 'package:social_app/layout/cubit/states.dart';
 import 'package:social_app/modules/settings/posts_screen.dart';
+import 'package:social_app/modules/settings/savedPosts_scree.dart';
 import 'package:social_app/modules/settings/update_user_info_screen.dart';
 import 'package:social_app/shared/components.dart';
 import 'package:social_app/shared/styles/styles.dart';
@@ -46,6 +47,7 @@ class SettingsScreen extends StatelessWidget {
                                   .currentUser!
                                   .coverPic,
                               height: height * .3,
+                              width: width,
                               maxHeightDiskCache: 150,
                               fit: BoxFit.cover,
                               key: UniqueKey(),
@@ -63,7 +65,7 @@ class SettingsScreen extends StatelessWidget {
                             left: width * .5 - 53,
                             child: CircleAvatar(
                               radius: 48,
-                              backgroundColor: Colors.grey,
+                              backgroundColor: Colors.white,
                               child: CircleAvatar(
                                   backgroundColor: Colors.transparent,
                                   backgroundImage: CachedNetworkImageProvider(
@@ -162,7 +164,7 @@ class SettingsScreen extends StatelessWidget {
                           builder: (_) {
                             return BlocProvider.value(
                               value: BlocProvider.of<HomeCubit>(context),
-                              child: MyPostsScreen(),
+                              child: const MyPostsScreen(),
                             );
                           },
                         ));
@@ -176,9 +178,19 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     buildProfileItem(
                       height: height,
-                      prefixIcon: Icons.security_rounded,
+                      prefixIcon: Icons.bookmark_border_rounded,
                       suffixIcon: Icons.arrow_forward_ios_rounded,
-                      text: 'Update Security Info ',
+                      text: 'Show Saved Post ',
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) {
+                            return BlocProvider.value(
+                              value: BlocProvider.of<HomeCubit>(context),
+                              child: const SavedPostScreen(),
+                            );
+                          },
+                        ));
+                      },
                     ),
                   ]);
             }

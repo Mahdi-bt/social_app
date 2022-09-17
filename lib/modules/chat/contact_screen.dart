@@ -4,6 +4,7 @@ import 'package:social_app/layout/cubit/cubit.dart';
 import 'package:social_app/layout/cubit/states.dart';
 import 'package:social_app/layout/home_layout.dart';
 
+import '../../shared/styles/styles.dart';
 import '../../shared/widgets/buildContactitem.dart';
 
 class ContactScrenn extends StatelessWidget {
@@ -17,26 +18,55 @@ class ContactScrenn extends StatelessWidget {
         child: SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Column(children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(
-                Icons.sort_rounded,
+        Container(
+          margin: EdgeInsets.symmetric(
+            horizontal: width * .01,
+            vertical: height * .02,
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              colors: [
+                HexColor('#22CCFD'),
+                HexColor('#42A4FB'),
+                HexColor('#7664FB'),
+                HexColor('#8AB4F8'),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                  blurRadius: 7,
+                  color: Colors.grey.shade400,
+                  offset: const Offset(0, 5))
+            ],
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.sort_rounded,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            Text(
-              'Contacts',
-              style: Theme.of(context).textTheme.headline5,
-            ),
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(
-                Icons.search_rounded,
+              Text(
+                'Contacts',
+                style: Theme.of(context)
+                    .textTheme
+                    .headline5!
+                    .copyWith(color: Colors.white),
               ),
-            ),
-          ],
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.search_rounded,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
         ),
         BlocBuilder<HomeCubit, HomeLayoutStates>(
           builder: (context, state) {

@@ -8,6 +8,7 @@ class UserModel {
   late String coverPic;
   String status = 'online';
   String userJob = '';
+  String fcmToken = '';
 
   UserModel({
     required this.coverPic,
@@ -16,6 +17,7 @@ class UserModel {
     required this.uid,
     required this.userName,
     required this.gender,
+    required this.fcmToken,
   });
 
   UserModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class UserModel {
     coverPic = json['coverPic'];
     status = json['status'];
     userJob = json['userJob'];
+    fcmToken = json['fcmToken'];
   }
   Map<String, dynamic> toMap() {
     return {
@@ -40,6 +43,7 @@ class UserModel {
       "phoneNumber": phoneNumber,
       "gender": gender,
       "userJob": userJob,
+      "fcmToken": fcmToken,
     };
   }
 }

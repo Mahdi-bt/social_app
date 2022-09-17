@@ -178,3 +178,30 @@ class HomeUnfollowUserFailedState extends HomeLayoutStates {}
 
 //state to change Sort Type
 class HomeFeedChangeSortTypeState extends HomeLayoutStates {}
+
+//states to bookmark a post
+
+class HomeBookMarkPostSucesState extends HomeLayoutStates {}
+
+class HomeBookMarkPostLoadingState extends HomeLayoutStates {}
+
+class HomeBookMarkPostFailedState extends HomeLayoutStates {}
+
+//states to get Bookmarked Posts
+class HomeGetBookMarkedPostsLoadingState extends HomeLayoutStates {}
+
+class HomeGetBookMarkedPostsSuccesState extends HomeLayoutStates {}
+
+class HomeGetBookMarkedPostsFailedState extends HomeLayoutStates {}
+
+//staes to remove booMark post
+class HomeRemoveBookmarkedPostLoadingState extends HomeLayoutStates {}
+
+class HomeRemoveBookmarkedPostSuccesState extends HomeLayoutStates {}
+
+class HomeRemoveBookmarkedPostFailedState extends HomeLayoutStates {}
+
+//state to pick Pdf File
+class HomePickPdfFileSuccesStates extends HomeLayoutStates {}
+
+class HomePickPdfFileFailedStates extends HomeLayoutStates {}

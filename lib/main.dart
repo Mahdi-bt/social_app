@@ -1,16 +1,36 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_app/shared/bloc_observer.dart';
+import 'package:social_app/shared/constant.dart';
 import 'package:social_app/shared/local/CacheHelper.dart';
 import 'package:social_app/shared/router.dart';
 import 'package:social_app/shared/styles/styles.dart';
+
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print('On Background Message');
+  print(message.data.toString());
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await CacheHelper.init();
   await Firebase.initializeApp();
 
+  fcmToken = (await FirebaseMessaging.instance.getToken())!;
+  print("Token :${fcmToken}");
+  // The app is open and u work with it
+  FirebaseMessaging.onMessage.listen((event) {
+    print(event.data.toString());
+  });
+
+  // The app is Opend but Running in the backgroud
+  FirebaseMessaging.onMessageOpenedApp.listen((event) {
+    print(event.data.toString());
+  });
+
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   String widgetToStart;
   if (CacheHelper.sharedPreferences.getBool('onBoard') != null &&
       CacheHelper.sharedPreferences.getBool('onBoard') == false) {

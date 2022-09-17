@@ -40,11 +40,18 @@ class NewPostScreen extends StatelessWidget {
                   );
                 } else {
                   return TextButton(
-                    onPressed: () => HomeCubit.get(context).postImage != null
-                        ? HomeCubit.get(context)
-                            .createPostWithPic(text: _textController.text)
-                        : HomeCubit.get(context)
-                            .createPost(text: _textController.text),
+                    onPressed: () {
+                      if (HomeCubit.get(context).postImage != null) {
+                        HomeCubit.get(context)
+                            .createPostWithPic(text: _textController.text);
+                      } else if (HomeCubit.get(context).pdfFile != null) {
+                        HomeCubit.get(context)
+                            .createPostWithPdfFile(text: _textController.text);
+                      } else {
+                        HomeCubit.get(context)
+                            .createPost(text: _textController.text);
+                      }
+                    },
                     child: Text('Post',
                         style: Theme.of(context).textTheme.subtitle1!.copyWith(
                               color: Colors.lightBlue,
@@ -136,7 +143,9 @@ class NewPostScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       primary: Colors.redAccent,
                     ),
-                    onPressed: () {},
+                    onPressed: () async {
+                      await context.read<HomeCubit>().pickPdfFile();
+                    },
                     icon: const Icon(IconBroken.Document),
                     label: const Text('Add Document'),
                   ),

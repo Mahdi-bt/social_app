@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:social_app/models/userModel.dart';
 import 'package:social_app/modules/login/cubit/states.dart';
+import 'package:social_app/shared/constant.dart';
 import 'package:social_app/shared/local/CacheHelper.dart';
 
 import '../../../shared/components.dart';
@@ -27,8 +28,15 @@ class LoginCubit extends Cubit<LoginStates> {
         .then((value) {
       CacheHelper.sharedPreferences
           .setString('uid', value.user!.uid)
-          .then((value) {
-        emit(LoginSuccesState());
+          .then((newvalue) {
+        FirebaseFirestore.instance
+            .collection("users")
+            .doc(value.user!.uid)
+            .update({"fcmToken": fcmToken}).then((value) {
+          emit(LoginSuccesState());
+        }).catchError((onError) {
+          emit(LoginFailedState());
+        });
       }).catchError((onError) {
         emit(LoginFailedState());
       });
@@ -58,6 +66,7 @@ class LoginCubit extends Cubit<LoginStates> {
         uid: value.user!.uid,
         userName: value.user!.displayName!,
         gender: 'Male',
+        fcmToken: fcmToken,
       );
       FirebaseFirestore.instance
           .collection("users")

@@ -38,36 +38,68 @@ class NotificationScreen extends StatelessWidget {
         builder: (context, state) {
           return SafeArea(
               child: Column(children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(
-                    Icons.sort_rounded,
+            Container(
+              margin: EdgeInsets.symmetric(
+                horizontal: width * .01,
+                vertical: height * .02,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  colors: [
+                    HexColor('#22CCFD'),
+                    HexColor('#42A4FB'),
+                    HexColor('#7664FB'),
+                    HexColor('#8AB4F8'),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                      blurRadius: 7,
+                      color: Colors.grey.shade400,
+                      offset: const Offset(0, 5))
+                ],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.sort_rounded,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                Text(
-                  'Notification',
-                  style: Theme.of(context).textTheme.headline5,
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: CircleAvatar(
-                    radius: 18,
-                    child: Center(
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () {
-                          cubit.deleteUserNotification();
-                        },
-                        icon: const Icon(Icons.delete_rounded),
+                  Text(
+                    'Notification',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headline5!
+                        .copyWith(color: Colors.white),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: CircleAvatar(
+                      backgroundColor: Colors.redAccent,
+                      radius: 18,
+                      child: Center(
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            cubit.deleteUserNotification();
+                          },
+                          icon: const Icon(
+                            Icons.delete_rounded,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             Expanded(
               child: cubit.notification.isEmpty
